@@ -1,0 +1,54 @@
+<div class="min-h-screen w-full flex flex-col items-center justify-start bg-transparent">
+  <div class="w-full flex flex-col gap-7 px-2 sm:px-8 md:px-16 lg:px-32 xl:px-48 2xl:px-64 py-8">
+    <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-200 text-center">Gestión de Materias</h2>
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+      <button mat-raised-button color="primary" (click)="openAddMateria()">
+        <mat-icon>add</mat-icon>
+        <span>Agregar Materia</span>
+      </button>
+      <div *ngIf="alert" class="w-full sm:w-auto ml-0 sm:ml-4">
+        <div [ngClass]="{
+          'bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700': alert.type === 'success',
+          'bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700': alert.type === 'error',
+          'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700': alert.type === 'warning'
+        }" class="rounded-lg border px-4 py-2 text-sm font-medium flex items-center gap-2 shadow">
+          <mat-icon *ngIf="alert.type === 'success'" class="!text-green-600 dark:!text-green-300">check_circle</mat-icon>
+          <mat-icon *ngIf="alert.type === 'error'" class="!text-red-600 dark:!text-red-300">error</mat-icon>
+          <mat-icon *ngIf="alert.type === 'warning'" class="!text-yellow-600 dark:!text-yellow-300">warning</mat-icon>
+          <span>{{ alert.message }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="overflow-x-auto w-full">
+      <table class="min-w-full bg-transparent rounded-xl shadow overflow-hidden">
+        <thead>
+          <tr class="bg-blue-100 dark:bg-[#232531] text-blue-800 dark:text-blue-200">
+            <th class="py-3 px-4 text-left">ID</th>
+            <th class="py-3 px-4 text-left">Nombre</th>
+            <th class="py-3 px-4 text-left">Descripción</th>
+            <th class="py-3 px-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let materia of materias" class="border-b border-blue-50 dark:border-[#232531] hover:bg-blue-50 dark:hover:bg-[#232834] transition">
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ materia.id }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ materia.nombre }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ materia.descripcion }}</td>
+            <td class="py-2 px-4 text-center flex gap-2 justify-center">
+              <button mat-icon-button color="primary" (click)="openEditMateria(materia)">
+                <mat-icon class="!text-blue-600 dark:!text-blue-300">edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="openDeleteDialog(materia)">
+                <mat-icon class="!text-red-600 dark:!text-red-300">delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="materias.length === 0">
+            <td colspan="4" class="py-6 text-center text-gray-400 dark:text-gray-300">No hay materias registradas.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Aquí irán los formularios de agregar/editar y el modal de confirmación de borrado -->

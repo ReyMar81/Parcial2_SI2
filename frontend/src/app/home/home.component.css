@@ -1,0 +1,207 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: rgb(255, 255, 255);
+}
+aside {
+  transition: width 0.3s;
+  min-width: 5rem;
+  max-width: 18rem;
+  z-index: 2;
+  box-shadow: 0 4px 32px 0 rgba(27, 30, 44, 0.07);
+  border-radius: 2rem;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+main {
+  background: #f1f5fd;
+  padding: 0;
+  border-radius: 0;
+}
+.sidebar-item {
+  color: #1e3a8a;
+}
+.sidebar-link-text {
+  color: #1e3a8a;
+}
+.sidebar-item .mat-icon {
+  color: #2563eb;
+}
+.sidebar-item.active-link,
+.sidebar-item:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.sidebar-item.active-link .mat-icon,
+.sidebar-item:hover .mat-icon {
+  color: #fff;
+}
+.user-menu-style .mat-menu-item.menu-item {
+  background: #dbeafe !important;
+  color: #1e3a8a;
+}
+.user-menu-style .mat-menu-item.menu-item .mat-icon {
+  color: #2563eb;
+}
+.user-menu-style .mat-menu-item.menu-item:hover {
+  background: #2563eb !important;
+  color: #fff;
+}
+.user-menu-style .mat-menu-item.menu-item:hover .mat-icon {
+  color: #fff;
+}
+.dark aside {
+  background: #232a3a;
+  color: #e5e7eb;
+}
+.dark main {
+  background: #1a202c;
+}
+.dark .sidebar-item {
+  color: #e5e7eb;
+}
+.dark .sidebar-link-text {
+  color: #e5e7eb !important;
+}
+.dark .sidebar-item .mat-icon {
+  color: #a5b4fc;
+}
+.dark .sidebar-item.active-link,
+.dark .sidebar-item:hover {
+  background: #60a5fa;
+  color: #1e293b;
+}
+.dark .sidebar-item.active-link .mat-icon,
+.dark .sidebar-item:hover .mat-icon {
+  color: #1e293b;
+}
+.dark .user-menu-style .mat-menu-item.menu-item {
+  background: #232a3a !important;
+  color: #e5e7eb;
+}
+.dark .user-menu-style .mat-menu-item.menu-item .mat-icon {
+  color: #7ab7ff;
+}
+.dark .user-menu-style .mat-menu-item.menu-item:hover {
+  background: #2563eb !important;
+  color: #fff;
+}
+.dark .user-menu-style .mat-menu-item.menu-item:hover .mat-icon {
+  color: #fff;
+}
+.sidebar-item {
+  border-radius: 1.3rem;
+  margin: 0.25rem 0;
+  padding: 0.8rem 1rem;
+  font-size: 1.09rem;
+  background: transparent;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+  min-height: 3.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sidebar-link-text {
+  color: #1e3a8a;
+}
+.sidebar-item .mat-icon {
+  color: #2563eb;
+}
+.sidebar-item.active-link,
+.sidebar-item:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.sidebar-item.active-link .mat-icon,
+.sidebar-item:hover .mat-icon {
+  color: #fff;
+}
+.sidebar-item.sidebar-item-collapsed {
+  justify-content: center !important;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+.dark .sidebar-item {
+  color: #c7dafc;
+  background: transparent;
+}
+.dark .sidebar-link-text {
+  color: #c7dafc !important;
+}
+.dark .sidebar-item .mat-icon {
+  color: #7ab7ff;
+}
+.dark .sidebar-item.active-link,
+.dark .sidebar-item:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.dark .sidebar-item.active-link .mat-icon,
+.dark .sidebar-item:hover .mat-icon {
+  color: #fff;
+}
+.dark .custom-user-menu {
+  background: #232834 !important;
+  border-color: #232531 !important;
+}
+.dark .mat-menu-item {
+  color: #c7dafc;
+  background: transparent;
+}
+.dark .mat-menu-item .mat-icon {
+  color: #7ab7ff;
+}
+.dark .mat-menu-item:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.dark .mat-menu-item:hover .mat-icon {
+  color: #fff;
+}
+.user-menu-style .mat-menu-item.menu-item {
+  border-radius: 1.3rem;
+  margin: 0.25rem 0;
+  font-size: 1.09rem;
+  font-weight: 500;
+  color: #2563eb;
+  background: transparent;
+  transition: background 0.2s, color 0.2s;
+  min-height: 3.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.user-menu-style .mat-menu-item.menu-item .mat-icon {
+  font-size: 1.8rem;
+  color: #559aff;
+  transition: color 0.2s;
+}
+.user-menu-style .mat-menu-item.menu-item:hover {
+  background: #e8f1ff;
+  color: #2563eb;
+}
+.user-menu-style .mat-menu-item.menu-item:hover .mat-icon {
+  color: #2563eb;
+}
+.dark .user-menu-style .mat-menu-item.menu-item {
+  color: #c7dafc;
+  background: transparent;
+}
+.dark .user-menu-style .mat-menu-item.menu-item .mat-icon {
+  color: #7ab7ff;
+}
+.dark .user-menu-style .mat-menu-item.menu-item:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.dark .user-menu-style .mat-menu-item.menu-item:hover .mat-icon {
+  color: #fff;
+}
+.dashboard-welcome-container {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}

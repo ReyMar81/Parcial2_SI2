@@ -1,0 +1,220 @@
+<div class="flex min-h-screen bg-white dark:bg-[#232a3a] transition-colors duration-300">
+  <!-- Sidebar -->
+  <aside
+    class="h-screen min-h-screen rounded-2xl flex flex-col shadow-xl transition-all duration-300
+           bg-[#dbeafe] dark:bg-[#232531] border border-[#e7ebf3] dark:border-[#232531]
+           relative"
+    [class.w-72]="!collapsed"
+    [class.w-20]="collapsed"
+  >
+    <!-- Logo y botón hamburguesa -->
+    <div class="flex items-center px-5 pt-5 pb-1">
+      <mat-icon class="text-2xl text-blue-500">school</mat-icon>
+      <span *ngIf="!collapsed" class="text-xl font-extrabold ml-2 tracking-wide text-blue-800 dark:text-blue-300">SchoolSys</span>
+      <button mat-icon-button (click)="toggleSidebar()" class="ml-auto text-gray-400 dark:text-gray-300 rounded-full hover:bg-blue-100 dark:hover:bg-[#222b36] transition" aria-label="toggle sidebar">
+        <mat-icon>{{ collapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
+    </div>
+    <mat-divider class="!my-2 !bg-[#f0f4fb] dark:!bg-[#222b36]"></mat-divider>
+    <!-- Navegación -->
+    <nav class="flex-1 mt-0">
+      <ul class="px-2">
+        <li>
+          <a [routerLink]="['/home']" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }" class="sidebar-item" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>dashboard</mat-icon>
+            <span *ngIf="!collapsed" class="ml-4 sidebar-link-text">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <!-- Botón para abrir menú flotante cuando está comprimido -->
+          <div *ngIf="collapsed" [matMenuTriggerFor]="usuariosMenu" class="sidebar-item cursor-pointer select-none flex items-center justify-center sidebar-item-collapsed" aria-label="Gestión de Usuarios">
+            <mat-icon>group</mat-icon>
+          </div>
+          <!-- Inline expandible cuando no está comprimido -->
+          <div *ngIf="!collapsed" (click)="usuariosSubmenuOpen = !usuariosSubmenuOpen" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>group</mat-icon>
+            <span class="ml-4 sidebar-link-text flex-1">Gestión de Usuarios</span>
+            <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': usuariosSubmenuOpen}">expand_more</mat-icon>
+          </div>
+          <ul *ngIf="usuariosSubmenuOpen && !collapsed" class="ml-10 mt-1 space-y-1">
+            <li>
+              <a [routerLink]="['/home/usuarios/alumnos']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>school</mat-icon>
+                <span class="ml-2 sidebar-link-text">Alumnos</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/usuarios/maestros']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>person</mat-icon>
+                <span class="ml-2 sidebar-link-text">Maestros</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/usuarios/tutores']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>supervisor_account</mat-icon>
+                <span class="ml-2 sidebar-link-text">Tutores</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/usuarios/admin']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>admin_panel_settings</mat-icon>
+                <span class="ml-2 sidebar-link-text">Administrativos</span>
+              </a>
+            </li>
+          </ul>
+          <!-- MatMenu para modo comprimido -->
+          <mat-menu #usuariosMenu="matMenu" yPosition="below" xPosition="after">
+            <button mat-menu-item [routerLink]="['/home/usuarios/alumnos']">
+              <mat-icon>school</mat-icon>
+              <span>Alumnos</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/usuarios/maestros']">
+              <mat-icon>person</mat-icon>
+              <span>Maestros</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/usuarios/tutores']">
+              <mat-icon>supervisor_account</mat-icon>
+              <span>Tutores</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/usuarios/admin']">
+              <mat-icon>admin_panel_settings</mat-icon>
+              <span>Administrativos</span>
+            </button>
+          </mat-menu>
+        </li>
+        <li>
+          <!-- Botón para abrir menú flotante cuando está comprimido -->
+          <div *ngIf="collapsed" [matMenuTriggerFor]="materiasMenu" class="sidebar-item cursor-pointer select-none flex items-center justify-center sidebar-item-collapsed" aria-label="Gestión de Materias">
+            <mat-icon>book</mat-icon>
+          </div>
+          <!-- Inline expandible cuando no está comprimido -->
+          <div *ngIf="!collapsed" (click)="materiasSubmenuOpen = !materiasSubmenuOpen" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>book</mat-icon>
+            <span class="ml-4 sidebar-link-text flex-1">Gestión de Materias</span>
+            <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': materiasSubmenuOpen}">expand_more</mat-icon>
+          </div>
+          <ul *ngIf="materiasSubmenuOpen && !collapsed" class="ml-10 mt-1 space-y-1">
+            <li>
+              <a [routerLink]="['/home/materias']" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>list_alt</mat-icon>
+                <span class="ml-2 sidebar-link-text">Materias</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/materias/asignaciones']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>assignment</mat-icon>
+                <span class="ml-2 sidebar-link-text">Asignaciones</span>
+              </a>
+            </li>
+          </ul>
+          <!-- MatMenu para modo comprimido -->
+          <mat-menu #materiasMenu="matMenu" yPosition="below" xPosition="after">
+            <button mat-menu-item [routerLink]="['/home/materias']" [routerLinkActive]="'active-link'" [routerLinkActiveOptions]="{ exact: true }">
+              <mat-icon>list_alt</mat-icon>
+              <span>Materias</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/materias/asignaciones']" [routerLinkActive]="'active-link'">
+              <mat-icon>assignment</mat-icon>
+              <span>Asignaciones</span>
+            </button>
+          </mat-menu>
+        </li>
+        <li>
+          <!-- Botón para abrir menú flotante cuando está comprimido -->
+          <div *ngIf="collapsed" [matMenuTriggerFor]="aulasMenu" class="sidebar-item cursor-pointer select-none flex items-center justify-center sidebar-item-collapsed" aria-label="Gestión de Aulas">
+            <mat-icon>apartment</mat-icon>
+          </div>
+          <!-- Inline expandible cuando no está comprimido -->
+          <div *ngIf="!collapsed" (click)="aulasSubmenuOpen = !aulasSubmenuOpen" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>apartment</mat-icon>
+            <span class="ml-4 sidebar-link-text flex-1">Gestión de Aulas</span>
+            <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': aulasSubmenuOpen}">expand_more</mat-icon>
+          </div>
+          <ul *ngIf="aulasSubmenuOpen && !collapsed" class="ml-10 mt-1 space-y-1">
+            <li>
+              <a [routerLink]="['/home/aulas/grados']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>school</mat-icon>
+                <span class="ml-2 sidebar-link-text">Gestión de Grados</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/aulas/secciones']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>view_list</mat-icon>
+                <span class="ml-2 sidebar-link-text">Gestión de Secciones</span>
+              </a>
+            </li>
+          </ul>
+          <!-- MatMenu para modo comprimido -->
+          <mat-menu #aulasMenu="matMenu" yPosition="below" xPosition="after">
+            <button mat-menu-item [routerLink]="['/home/aulas/grados']">
+              <mat-icon>school</mat-icon>
+              <span>Gestión de Grados</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/aulas/secciones']">
+              <mat-icon>view_list</mat-icon>
+              <span>Gestión de Secciones</span>
+            </button>
+          </mat-menu>
+        </li>
+      </ul>
+    </nav>
+    <div class="flex-1"></div>
+    <!-- Área usuario y dark mode/logout -->
+    <div class="w-full px-3 pb-4 pt-2 flex flex-col">
+      <ng-container *ngIf="!collapsed; else collapsedUser">
+        <div class="flex items-center gap-3 px-2 py-2 rounded-xl bg-[#f5f9ff] dark:bg-[#232834] shadow-sm">
+          <img *ngIf="avatarUrl" [src]="avatarUrl" class="rounded-full w-9 h-9 object-cover border-2 border-blue-200 bg-white" alt="avatar" />
+          <mat-icon *ngIf="!avatarUrl" class="rounded-full w-9 h-9 text-3xl text-blue-400 bg-white">account_circle</mat-icon>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-blue-500 dark:text-blue-200 leading-tight truncate">{{ username }}</div>
+            <div class="text-xs text-blue-500 dark:text-blue-200 leading-tight truncate">Usuario</div>
+          </div>
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="rounded-full hover:bg-blue-100 dark:hover:bg-[#2d3c5a] transition" aria-label="user menu">
+            <mat-icon>more_horiz</mat-icon>
+          </button>
+        </div>
+        <div class="flex justify-between items-center mt-4 px-2">
+          <button mat-icon-button (click)="logout()" class="rounded-full border border-[#e0e7ff] dark:border-[#444] bg-white dark:bg-[#232834] hover:bg-blue-100 dark:hover:bg-[#232531] transition" aria-label="Cerrar sesión">
+            <mat-icon class="text-red-500">logout</mat-icon>
+          </button>
+          <button mat-icon-button (click)="toggleDarkMode()" class="rounded-full border border-[#e0e7ff] dark:border-[#444] bg-white dark:bg-[#232834] hover:bg-blue-100 dark:hover:bg-[#232531] transition" aria-label="Modo oscuro">
+            <mat-icon [ngClass]="{'text-blue-400': !darkMode, 'text-yellow-200': darkMode}">{{ darkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          </button>
+        </div>
+      </ng-container>
+      <ng-template #collapsedUser>
+        <div class="flex flex-col items-center justify-center gap-2">
+          <img *ngIf="avatarUrl" [src]="avatarUrl" class="rounded-full w-10 h-10 object-cover border-2 border-blue-200 bg-white" alt="avatar" />
+          <mat-icon *ngIf="!avatarUrl" class="rounded-full w-10 h-10 text-3xl text-blue-400 bg-white">account_circle</mat-icon>
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="rounded-full hover:bg-blue-100 dark:hover:bg-[#2d3c5a] transition mt-1" aria-label="user menu">
+            <mat-icon>more_horiz</mat-icon>
+          </button>
+          <div class="flex flex-col items-center gap-2 mt-2 w-full">
+            <button mat-icon-button (click)="logout()" class="rounded-full border border-[#e0e7ff] dark:border-[#444] bg-white dark:bg-[#232834] hover:bg-blue-100 dark:hover:bg-[#232531] transition" aria-label="Cerrar sesión">
+              <mat-icon class="text-red-500">logout</mat-icon>
+            </button>
+            <button mat-icon-button (click)="toggleDarkMode()" class="rounded-full border border-[#e0e7ff] dark:border-[#444] bg-white dark:bg-[#232834] hover:bg-blue-100 dark:hover:bg-[#232531] transition" aria-label="Modo oscuro">
+              <mat-icon [ngClass]="{'text-blue-400': !darkMode, 'text-yellow-200': darkMode}">{{ darkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+      <mat-menu #userMenu="matMenu" yPosition="above" xPosition="after" class="user-menu-style">
+        <button mat-menu-item (click)="navigate('perfil')" class="menu-item">
+          <mat-icon>person</mat-icon>
+          <span>Ver perfil</span>
+        </button>
+        <button mat-menu-item (click)="navigate('cambiar-password')" class="menu-item">
+          <mat-icon>lock</mat-icon>
+          <span>Cambiar contraseña</span>
+        </button>
+      </mat-menu>
+    </div>
+  </aside>
+  <!-- Contenido principal -->
+  <main class="flex-1 flex flex-col min-h-screen pl-2 pr-2 transition-all duration-300 bg-white dark:bg-[#232a3a]">
+    <div class="flex-1 p-10 flex flex-col items-center justify-center">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

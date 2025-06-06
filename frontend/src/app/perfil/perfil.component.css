@@ -1,0 +1,16 @@
+.perfil-container {
+  padding: 0;
+  text-align: center;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+@media (prefers-color-scheme: dark) {
+  .perfil-container {
+    background: transparent;
+  }
+}
+.perfil-container h2 {
+  color: #2563eb;
+  margin-bottom: 1rem;
+}

@@ -1,0 +1,46 @@
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300">
+  <form
+    class="bg-white/90 p-10 rounded-2xl shadow-lg w-full max-w-sm flex flex-col gap-7"
+    (ngSubmit)="login()"
+    #loginForm="ngForm"
+    autocomplete="off"
+  >
+    <div class="flex flex-col items-center mb-4">
+      <span class="material-icons text-5xl text-blue-500 mb-2">school</span>
+      <h2 class="text-2xl font-bold text-center text-blue-800">Gestión Estudiantil</h2>
+      <p class="text-blue-400 text-sm">Bienvenido, inicia sesión</p>
+    </div>
+    <!-- Usuario -->
+    <div>
+      <label for="username" class="block text-gray-700 font-medium mb-1">Usuario</label>
+      <input
+        id="username"
+        type="text"
+        class="w-full rounded-lg px-4 py-2 bg-blue-50 border-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition"
+        required
+        [(ngModel)]="username"
+        name="username"
+        autocomplete="username"
+      />
+    </div>
+    <!-- Contraseña -->
+    <div>
+      <label for="password" class="block text-gray-700 font-medium mb-1">Contraseña</label>
+      <input
+        id="password"
+        type="password"
+        class="w-full rounded-lg px-4 py-2 bg-blue-50 border-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition"
+        required
+        [(ngModel)]="password"
+        name="password"
+        autocomplete="current-password"
+      />
+    </div>
+    <button
+      class="w-full mt-2 py-3 rounded-lg font-semibold tracking-wider shadow-md bg-green-200 text-green-900 hover:bg-green-300 transition-all"
+      type="submit"
+    >
+      Entrar
+    </button>
+  </form>
+</div>

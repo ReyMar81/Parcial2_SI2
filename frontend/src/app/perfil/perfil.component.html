@@ -1,0 +1,81 @@
+<div class="perfil-container mx-auto max-w-md p-8 bg-white rounded shadow-md mt-8">
+  <h2 class="text-2xl font-bold mb-6 text-blue-700">Perfil de Usuario</h2>
+
+  <ng-container *ngIf="perfil; else cargando">
+    <!-- Superadmin -->
+    <mat-card class="mb-4" *ngIf="perfil.is_superuser">
+      <mat-card-title>Superadministrador</mat-card-title>
+      <mat-card-content>
+        <div><strong>Nombre de usuario:</strong> {{ perfil.username }}</div>
+        <div><strong>ID:</strong> {{ perfil.id }}</div>
+        <div><strong>Privilegios:</strong></div>
+        <ul>
+          <li *ngFor="let priv of perfil.privilegios">{{ priv }}</li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Alumno -->
+    <mat-card class="mb-4" *ngIf="perfil.alumno">
+      <mat-card-title>Perfil Alumno</mat-card-title>
+      <mat-card-content>
+        <div><strong>Nombre:</strong> {{ perfil.alumno.persona.nombre }} {{ perfil.alumno.persona.apellido_paterno }}</div>
+        <div><strong>Registro:</strong> {{ perfil.alumno.registro }}</div>
+        <div><strong>CI:</strong> {{ perfil.alumno.persona.ci }}</div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Tutor -->
+    <mat-card class="mb-4" *ngIf="perfil.tutor">
+      <mat-card-title>Perfil Tutor</mat-card-title>
+      <mat-card-content>
+        <div><strong>Nombre:</strong> {{ perfil.tutor.persona.nombre }} {{ perfil.tutor.persona.apellido_paterno }}</div>
+        <div><strong>Ocupación:</strong> {{ perfil.tutor.ocupacion }}</div>
+        <div><strong>CI:</strong> {{ perfil.tutor.persona.ci }}</div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Alumnos asociados al tutor -->
+    <mat-card class="mb-4" *ngIf="perfil.alumnos_asociados?.length">
+      <mat-card-title>Alumnos Asociados</mat-card-title>
+      <mat-card-content>
+        <ul>
+          <li *ngFor="let alumno of perfil.alumnos_asociados">
+            {{ alumno.persona.nombre }} {{ alumno.persona.apellido_paterno }} (Registro: {{ alumno.registro }})
+          </li>
+        </ul>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Maestro -->
+    <mat-card class="mb-4" *ngIf="perfil.maestro">
+      <mat-card-title>Perfil Maestro</mat-card-title>
+      <mat-card-content>
+        <div><strong>Nombre:</strong> {{ perfil.maestro.persona.nombre }} {{ perfil.maestro.persona.apellido_paterno }}</div>
+        <div><strong>CI:</strong> {{ perfil.maestro.persona.ci }}</div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Roles (Grupos) -->
+    <mat-card class="mb-4" *ngIf="perfil.roles?.length">
+      <mat-card-title>Roles</mat-card-title>
+      <mat-chip-list>
+        <mat-chip *ngFor="let rol of perfil.roles">{{ rol }}</mat-chip>
+      </mat-chip-list>
+    </mat-card>
+
+    <!-- Privilegios -->
+    <mat-card class="mb-4" *ngIf="perfil.privilegios?.length && !perfil.is_superuser">
+      <mat-card-title>Privilegios</mat-card-title>
+      <ul>
+        <li *ngFor="let priv of perfil.privilegios">{{ priv }}</li>
+      </ul>
+    </mat-card>
+  </ng-container>
+
+  <!-- Cargando -->
+  <ng-template #cargando>
+    <mat-progress-spinner diameter="30" mode="indeterminate"></mat-progress-spinner>
+    <p class="mt-4">Cargando perfil...</p>
+  </ng-template>
+</div>

@@ -1,0 +1,48 @@
+# Python/Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.env
+.env.*
+*.DS_Store
+
+# Django migrations (except __init__.py)
+backend/apps/*/migrations/!(__init__.py)
+
+# Static files
+backend/staticfiles/
+
+# VSCode
+.vscode/
+
+# Node/Angular
+frontend/node_modules/
+frontend/dist/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+postgres_data/
+pgadmin_data/
+
+# Others
+*.bak
+*.swp
+*.swo
+.idea/
+
+# Ignore all migration files except __init__.py
+**/migrations/*.py
+!**/migrations/__init__.py
+**/migrations/*.pyc
+
+# Ignore compiled Angular output
+frontend/.angular/cache/

@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  db:
+    container_name: parcial2_si2_db
+    image: postgres:15
+    environment:
+      POSTGRES_DB: gestion_escolar
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: parcial2_si2_backend
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=True
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+      - DB_NAME=gestion_escolar
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
+      - DJANGO_SUPERUSER_PASSWORD=admin123
+
+  frontend:
+    container_name: parcial2_si2_frontend
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.frontend
+    ports:
+      - "4200:80"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+
+
+  pgadmin:
+    container_name: parcial2_si2_pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - db
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  postgres_data:
+  pgadmin_data:
