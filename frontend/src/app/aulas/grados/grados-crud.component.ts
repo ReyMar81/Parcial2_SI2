@@ -77,7 +77,7 @@ export class GradosCrudComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.authService.deleteGrado(grado.id).subscribe({
+        this.authService.deleteGrado(grado.id!).subscribe({
           next: () => {
             this.showAlert('success', 'Grado eliminado.');
             this.loadGrados();

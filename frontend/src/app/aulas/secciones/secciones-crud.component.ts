@@ -75,7 +75,7 @@ export class SeccionesCrudComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
         // Este PUT actualiza todos los campos, incluido "estado"
-        this.authService.updateSeccion(seccion.id, result).subscribe({
+        this.authService.updateSeccion(seccion.id!, result).subscribe({
           next: () => {
             this.showAlert('success', 'Sección editada correctamente');
             this.cargarSecciones();
@@ -102,7 +102,7 @@ export class SeccionesCrudComponent implements OnInit {
   }
 
   deleteSeccion(seccion: Seccion) {
-    this.authService.deleteSeccion(seccion.id).subscribe({
+    this.authService.deleteSeccion(seccion.id!).subscribe({
       next: () => {
         this.showAlert('warning', 'Sección eliminada');
         this.cargarSecciones();
@@ -110,17 +110,6 @@ export class SeccionesCrudComponent implements OnInit {
       error: () => this.showAlert('error', 'Error al eliminar sección')
     });
   }
-
-  desactivarSeccion(seccion: Seccion) {
-    this.authService.desactivarSeccion(seccion.id).subscribe({
-      next: () => {
-        this.showAlert('warning', 'Sección desactivada');
-        this.cargarSecciones();
-      },
-      error: () => this.showAlert('error', 'Error al desactivar sección')
-    });
-  }
-
   showAlert(type: 'success' | 'error' | 'warning', message: string) {
     this.alert = { type, message };
     setTimeout(() => this.alert = null, 3000);

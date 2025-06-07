@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from apps.personas.models import Persona, Alumno, Maestro, Tutor
+from datetime import datetime
+from django.db.models import Max
 
 User = get_user_model()
 
@@ -10,32 +12,60 @@ def crear_usuario_persona_rol(persona_data, rol, **extra_fields):
         'nombre', 'apellido_paterno', 'apellido_materno', 'genero',
         'ci', 'direccion', 'contacto', 'fecha_nacimiento'
     ]
-    # Extrae solo los campos válidos de persona
     persona_clean = {k: v for k, v in persona_data.items() if k in persona_fields}
 
     ci = persona_clean['ci']
     apellidos = f"{persona_clean['apellido_paterno']} {persona_clean.get('apellido_materno','')}".upper().strip()
     iniciales = "".join([ap[0] for ap in apellidos.split() if ap])
-    from datetime import datetime
     año = datetime.now().year
 
     # Definir registro y grupo según el rol
     if rol == 'alumno':
-        secuencia = Alumno.objects.count() + 1
-        registro = f"{año}02{str(secuencia).zfill(2)}.{iniciales}"
-        username = registro
+        base_registro = f"{año}02"
+        # Encuentra el registro mayor para el año actual
+        max_registro = Alumno.objects.filter(registro__startswith=base_registro).aggregate(Max('registro'))['registro__max']
+        if max_registro:
+            last_seq = int(max_registro[-2:])
+            next_seq = last_seq + 1
+        else:
+            next_seq = 1
+        registro = f"{año}02{str(next_seq).zfill(2)}"
+        base_username = f"{registro}.{iniciales}"
+        username = base_username
+        sufijo = 2
+        # Si ya existe, agrégale un sufijo hasta que sea único
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{sufijo}"
+            sufijo += 1
         group_name = 'Alumno'
         model = Alumno
         create_kwargs = dict(registro=registro)
     elif rol == 'maestro':
-        secuencia = Maestro.objects.count() + 1
-        registro = f"{año}01{str(secuencia).zfill(2)}.{iniciales}"
-        username = registro
+        base_registro = f"{año}01"
+        max_registro = Maestro.objects.filter(registro__startswith=base_registro).aggregate(Max('registro'))['registro__max']
+        if max_registro:
+            last_seq = int(max_registro[-2:])
+            next_seq = last_seq + 1
+        else:
+            next_seq = 1
+        registro = f"{año}01{str(next_seq).zfill(2)}"
+        base_username = f"{registro}.{iniciales}"
+        username = base_username
+        sufijo = 2
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{sufijo}"
+            sufijo += 1
         group_name = 'Maestro'
         model = Maestro
         create_kwargs = dict(registro=registro, **extra_fields)
     elif rol == 'tutor':
-        username = f"{ci}.{iniciales}"
+        # Sugerido: usa también sufijos para evitar duplicados de tutor si lo necesitas
+        base_username = f"{ci}.{iniciales}"
+        username = base_username
+        sufijo = 2
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{sufijo}"
+            sufijo += 1
         group_name = 'Tutor'
         model = Tutor
         create_kwargs = dict(**extra_fields)

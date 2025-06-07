@@ -1,2 +1,5 @@
-/* Estilos simples para la vista de maestros */
-h2 { color: #2563eb; }
+/* SOLO PARA DEBUG, haz transparente el fondo del diálogo */
+::ng-deep .mat-dialog-container {
+  background: transparent !important;
+  box-shadow: none !important; /* Opcional, para ver mejor */
+}

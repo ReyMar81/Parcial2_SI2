@@ -23,9 +23,41 @@ class MaestroViewSet(viewsets.ModelViewSet):
     queryset = Maestro.objects.all()
     serializer_class = MaestroSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # Crear el maestro y obtener la instancia
+        maestro = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        # Responder con credenciales como en inscripcion
+        resp = {
+            "mensaje": "Registro de maestro exitoso",
+            "maestro": {
+                "registro": maestro.registro,
+                "username": maestro.persona.usuario.username,
+                "password": maestro.persona.ci
+            }
+        }
+        return Response(resp, status=status.HTTP_201_CREATED, headers=headers)
+
 class TutorViewSet(viewsets.ModelViewSet):
     queryset = Tutor.objects.all()
     serializer_class = TutorSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tutor = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        resp = {
+            "mensaje": "Registro de tutor exitoso",
+            "tutor": {
+                "registro": tutor.persona.usuario.username,  # O lo que uses de identificador
+                "username": tutor.persona.usuario.username,
+                "password": tutor.persona.ci  # Cambia esto si generas una contraseña diferente
+            }
+        }
+        return Response(resp, status=status.HTTP_201_CREATED, headers=headers)
 
 class TutorAlumnoViewSet(viewsets.ModelViewSet):
     queryset = TutorAlumno.objects.all()
@@ -95,6 +127,7 @@ def inscripcion(request):
     resp = {
         "mensaje": "Inscripción exitosa",
         "alumno": {
+            "registro": alumno_obj.registro,
             "username": alumno_obj.persona.usuario.username,
             "password": alumno_obj.persona.ci
         },

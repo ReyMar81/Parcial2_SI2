@@ -5,25 +5,123 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 // ---- Interfaces ----
+
+// Materia
 export interface Materia {
   id?: number;
   nombre: string;
   descripcion: string;
 }
+
+// Grado
 export interface Grado {
-  id: number;
+  id?: number;
   nombre: string;
   nivel?: string;
   descripcion?: string;
 }
+
+// Seccion
 export interface Seccion {
-  id: number;
+  id?: number;
   nombre: string;
   aula: string;
   capacidad_maxima: number;
   estado: 'activa' | 'cerrada';
   grado: number | Grado;
 }
+
+// Maestro (Petición)
+export interface MaestroCreate{
+  persona: {
+    id?: number;
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    genero: 'M' | 'F';
+    ci: string;
+    direccion: string;
+    contacto: string;
+    fecha_nacimiento: string;
+  };
+  especialidad: string;
+}
+export interface MaestroCreateResponse {
+  mensaje: string;
+  maestro: {
+    registro: string;
+    username: string;
+    password: string;
+  };
+}
+// Maestro (Respuesta)
+export interface MaestroResponse {
+  id: number;
+  persona: PersonaResponse;
+  registro: string;
+  especialidad: string;
+}
+export interface PersonaResponse {
+  id: number;
+  usuario: number;
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  genero: string;
+  ci: string;
+  direccion: string;
+  contacto: string;
+  fecha_nacimiento: string;
+}
+
+// Perfil
+export interface PerfilResponse {
+  id: number;
+  username: string;
+  is_superuser: boolean;
+  privilegios: string[];
+  roles: string[];
+}
+
+// Inscripcion (Petición)
+export interface InscripcionRequest {
+  alumno: {
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    genero: string;
+    ci: string;
+    direccion: string;
+    contacto: string;
+    fecha_nacimiento: string;
+  };
+  tutor: {
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    genero: string;
+    ci: string;
+    direccion: string;
+    contacto: string;
+    fecha_nacimiento: string;
+    ocupacion: string;
+  };
+  tipo_relacion: string;
+  seccion_id: number;
+  ciclo: string;
+}
+
+// Inscripcion (Respuesta)
+export interface InscripcionUsuarioResponse {
+  username: string;
+  password: string;
+}
+export interface InscripcionResponse {
+  mensaje: string;
+  alumno: InscripcionUsuarioResponse;
+  tutor: InscripcionUsuarioResponse;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
@@ -37,6 +135,7 @@ export class AuthService {
   private materiaUrl = `${this.API_BASE}/api/materias/materias/`;
   private gradosUrl = `${this.API_BASE}/api/secciones/grados/`;
   private seccionesUrl = `${this.API_BASE}/api/secciones/secciones/`;
+  private maestroUrl = `${this.API_BASE}/api/personas/maestros/`;
 
   // --- Auth & Perfil ---
   login(username: string, password: string): Observable<any> {
@@ -48,10 +147,10 @@ export class AuthService {
       catchError(this.handleError)
     );
   }
-  
-  getPerfil(): Observable<any> {
-    return this.http.get<any>(this.perfilUrl).pipe(
-      tap((profile: any) => {
+
+  getPerfil(): Observable<PerfilResponse> {  // <--- Cambiado aquí
+    return this.http.get<PerfilResponse>(this.perfilUrl).pipe(
+      tap((profile: PerfilResponse) => {
         localStorage.setItem('perfil', JSON.stringify(profile));
       }),
       catchError(this.handleError)
@@ -134,39 +233,60 @@ export class AuthService {
     );
   }
 
-// --- Secciones CRUD ---
-getSecciones(): Observable<Seccion[]> {
-  return this.http.get<Seccion[]>(this.seccionesUrl).pipe(
-    catchError(this.handleError)
-  );
-}
+  // --- Secciones CRUD ---
+  getSecciones(): Observable<Seccion[]> {
+    return this.http.get<Seccion[]>(this.seccionesUrl).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-addSeccion(seccion: Partial<Seccion>): Observable<Seccion> {
-  return this.http.post<Seccion>(this.seccionesUrl, seccion).pipe(
-    catchError(this.handleError)
-  );
-}
+  addSeccion(seccion: Partial<Seccion>): Observable<Seccion> {
+    return this.http.post<Seccion>(this.seccionesUrl, seccion).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-updateSeccion(id: number, seccion: Partial<Seccion>): Observable<Seccion> {
-  return this.http.put<Seccion>(`${this.seccionesUrl}${id}/`, seccion).pipe(
-    catchError(this.handleError)
-  );
-}
+  updateSeccion(id: number, seccion: Partial<Seccion>): Observable<Seccion> {
+    return this.http.put<Seccion>(`${this.seccionesUrl}${id}/`, seccion).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-deleteSeccion(id: number): Observable<any> {
-  return this.http.delete<any>(`${this.seccionesUrl}${id}/`).pipe(
-    catchError(this.handleError)
-  );
-}
+  deleteSeccion(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.seccionesUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-desactivarSeccion(id: number): Observable<Seccion> {
-  return this.http.patch<Seccion>(`${this.seccionesUrl}${id}/`, { estado: 'cerrada' }).pipe(
-    catchError(this.handleError)
-  );
-}
-inscribirAlumno(data: any): Observable<any> {
-  return this.http.post<any>(this.inscripcionUrl, data).pipe(
-    catchError(this.handleError)
-  );
-}
+  // --- Inscripciones ---
+  inscribirAlumno(data: InscripcionRequest): Observable<InscripcionResponse> {
+    return this.http.post<InscripcionResponse>(this.inscripcionUrl, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Maestros CRUD ---
+  getMaestros(): Observable<MaestroResponse[]> {
+    return this.http.get<MaestroResponse[]>(this.maestroUrl).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addMaestro(maestro: MaestroCreate): Observable<MaestroCreateResponse> {
+    return this.http.post<MaestroCreateResponse>(this.maestroUrl, maestro).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateMaestro(id: number, maestro: MaestroCreate): Observable<MaestroResponse> {
+    return this.http.put<MaestroResponse>(`${this.maestroUrl}${id}/`, maestro).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteMaestro(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.maestroUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
 }
