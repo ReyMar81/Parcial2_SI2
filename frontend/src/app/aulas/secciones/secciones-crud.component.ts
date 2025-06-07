@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { SeccionFormDialogComponent, Seccion } from './seccion-form-dialog.component';
+import { SeccionFormDialogComponent } from './seccion-form-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { DeleteSeccionConfirmDialogComponent } from './delete-seccion-confirm-dialog.component';
+import { AuthService, Grado, Seccion } from '../../auth.service'; // <-- ESTA ES LA BUENA
 
 @Component({
   selector: 'app-secciones-crud',
@@ -20,19 +21,33 @@ import { DeleteSeccionConfirmDialogComponent } from './delete-seccion-confirm-di
   templateUrl: './secciones-crud.component.html',
   styleUrls: ['./secciones-crud.component.css'],
 })
-export class SeccionesCrudComponent {
-  secciones: Seccion[] = [
-    { id: 1, nombre: 'A', aula: '101', capacidad_maxima: 30, estado: true, grado: 'Primer Grado' },
-    { id: 2, nombre: 'B', aula: '102', capacidad_maxima: 28, estado: true, grado: 'Segundo Grado' },
-    { id: 3, nombre: 'C', aula: '201', capacidad_maxima: 32, estado: false, grado: 'Tercer Grado' }
-  ];
-  nextId = 4;
+export class SeccionesCrudComponent implements OnInit {
+  secciones: Seccion[] = [];
+  grados: Grado[] = [];
   alert: { type: 'success' | 'error' | 'warning', message: string } | null = null;
   deleteDialogRef: any = null;
   deleteTarget: Seccion | null = null;
-  grados: string[] = ['Primer Grado', 'Segundo Grado', 'Tercer Grado'];
 
-  constructor(private dialog: MatDialog) {}
+  constructor(private dialog: MatDialog, private authService: AuthService) {}
+
+  ngOnInit() {
+    this.cargarGrados();
+    this.cargarSecciones();
+  }
+
+  cargarGrados() {
+    this.authService.getGrados().subscribe({
+      next: (data) => this.grados = data,
+      error: () => this.showAlert('error', 'Error al cargar grados.')
+    });
+  }
+
+  cargarSecciones() {
+    this.authService.getSecciones().subscribe({
+      next: (data) => this.secciones = data,
+      error: () => this.showAlert('error', 'Error al cargar secciones.')
+    });
+  }
 
   openAddSeccion() {
     const dialogRef = this.dialog.open(SeccionFormDialogComponent, {
@@ -41,8 +56,13 @@ export class SeccionesCrudComponent {
     });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
-        this.secciones.push({ id: this.nextId++, ...result });
-        this.showAlert('success', 'Sección agregada correctamente');
+        this.authService.addSeccion(result).subscribe({
+          next: () => {
+            this.showAlert('success', 'Sección agregada correctamente');
+            this.cargarSecciones();
+          },
+          error: () => this.showAlert('error', 'Error al agregar sección')
+        });
       }
     });
   }
@@ -54,11 +74,18 @@ export class SeccionesCrudComponent {
     });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
-        Object.assign(seccion, result);
-        this.showAlert('success', 'Sección editada correctamente');
+        // Este PUT actualiza todos los campos, incluido "estado"
+        this.authService.updateSeccion(seccion.id, result).subscribe({
+          next: () => {
+            this.showAlert('success', 'Sección editada correctamente');
+            this.cargarSecciones();
+          },
+          error: () => this.showAlert('error', 'Error al editar sección')
+        });
       }
     });
   }
+
 
   openDeleteDialog(seccion: Seccion) {
     this.deleteTarget = seccion;
@@ -75,12 +102,33 @@ export class SeccionesCrudComponent {
   }
 
   deleteSeccion(seccion: Seccion) {
-    this.secciones = this.secciones.filter(s => s.id !== seccion.id);
-    this.showAlert('warning', 'Sección eliminada');
+    this.authService.deleteSeccion(seccion.id).subscribe({
+      next: () => {
+        this.showAlert('warning', 'Sección eliminada');
+        this.cargarSecciones();
+      },
+      error: () => this.showAlert('error', 'Error al eliminar sección')
+    });
+  }
+
+  desactivarSeccion(seccion: Seccion) {
+    this.authService.desactivarSeccion(seccion.id).subscribe({
+      next: () => {
+        this.showAlert('warning', 'Sección desactivada');
+        this.cargarSecciones();
+      },
+      error: () => this.showAlert('error', 'Error al desactivar sección')
+    });
   }
 
   showAlert(type: 'success' | 'error' | 'warning', message: string) {
     this.alert = { type, message };
     setTimeout(() => this.alert = null, 3000);
   }
+  getNombreGrado(gradoRef: number | Grado): string {
+  const id = typeof gradoRef === 'object' ? gradoRef.id : gradoRef;
+  const grado = this.grados.find(g => g.id === id);
+  return grado ? grado.nombre : '—';
+}
+
 }

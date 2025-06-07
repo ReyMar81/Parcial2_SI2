@@ -1,7 +1,7 @@
 <div class="flex min-h-screen bg-white dark:bg-[#232a3a] transition-colors duration-300">
   <!-- Sidebar -->
   <aside
-    class="h-screen min-h-screen rounded-2xl flex flex-col shadow-xl transition-all duration-300
+    class="h-screen rounded-2xl flex flex-col shadow-xl transition-all duration-300
            bg-[#dbeafe] dark:bg-[#232531] border border-[#e7ebf3] dark:border-[#232531]
            relative"
     [class.w-72]="!collapsed"
@@ -157,6 +157,14 @@
           </mat-menu>
         </li>
       </ul>
+      <ul class="px-2 mt-2">
+        <li>
+          <a [routerLink]="['/home/inscripcion']" routerLinkActive="active-link" class="sidebar-item" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>how_to_reg</mat-icon>
+            <span *ngIf="!collapsed" class="ml-4 sidebar-link-text">Inscripción</span>
+          </a>
+        </li>
+      </ul>
     </nav>
     <div class="flex-1"></div>
     <!-- Área usuario y dark mode/logout -->
@@ -212,8 +220,8 @@
     </div>
   </aside>
   <!-- Contenido principal -->
-  <main class="flex-1 flex flex-col min-h-screen pl-2 pr-2 transition-all duration-300 bg-white dark:bg-[#232a3a]">
-    <div class="flex-1 p-10 flex flex-col items-center justify-center">
+  <main class="flex-1 flex flex-col pl-2 pr-2 transition-all duration-300 bg-white dark:bg-[#232a3a] h-screen overflow-y-auto">
+    <div class="p-10 flex flex-col items-center">
       <router-outlet></router-outlet>
     </div>
   </main>

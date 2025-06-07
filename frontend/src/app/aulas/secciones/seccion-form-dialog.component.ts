@@ -7,15 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
-
-export interface Seccion {
-  id: number;
-  nombre: string;
-  aula: string;
-  capacidad_maxima: number;
-  estado: boolean;
-  grado: string;
-}
+import {Grado, Seccion } from '../../auth.service';
 
 @Component({
   selector: 'app-seccion-form-dialog',
@@ -82,14 +74,21 @@ export interface Seccion {
         </div>
         <div>
           <label for="grado" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Grado<span class="text-red-500">*</span></label>
-          <mat-select id="grado" formControlName="grado" required>
-            <mat-option *ngFor="let grado of grados" [value]="grado">{{ grado }}</mat-option>
-          </mat-select>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-select id="grado" formControlName="grado" required>
+              <mat-option *ngFor="let grado of grados" [value]="grado.id">{{ grado.nombre }}</mat-option>
+            </mat-select>
+          </mat-form-field>
         </div>
         <div class="flex items-center gap-2">
-          <mat-icon>toggle_on</mat-icon>
           <label for="estado" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Activo</label>
-          <input id="estado" type="checkbox" formControlName="estado" class="ml-2">
+          <input
+            id="estado"
+            type="checkbox"
+            [checked]="form.get('estado')?.value === 'activa'"
+            (change)="onEstadoChange($event)"
+            class="ml-2"
+          >
         </div>
         <div class="flex gap-4 mt-2 w-full justify-center">
           <button mat-stroked-button color="primary" type="button" (click)="onCancel()" class="dark:text-blue-200">Cancelar</button>
@@ -102,27 +101,38 @@ export interface Seccion {
 })
 export class SeccionFormDialogComponent {
   form: FormGroup;
-  grados: string[];
+  grados: Grado[];
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<SeccionFormDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { seccion?: Seccion, grados: string[] }
+    @Inject(MAT_DIALOG_DATA) public data: { seccion?: Seccion, grados: Grado[] }
   ) {
     this.grados = data.grados || [];
     this.form = this.fb.group({
       nombre: [data.seccion?.nombre || '', Validators.required],
-      aula: [data.seccion?.aula || '', [Validators.required, Validators.min(1)]],
+      aula: [data.seccion?.aula ?? '', [Validators.required, Validators.min(1)]],
       capacidad_maxima: [data.seccion?.capacidad_maxima || '', [Validators.required, Validators.min(1)]],
-      estado: [data.seccion?.estado ?? true],
-      grado: [data.seccion?.grado || '', Validators.required]
+      estado: [data.seccion?.estado ? (data.seccion.estado === 'activa' ? 'activa' : 'cerrada') : 'activa'],
+      grado: [data.seccion?.grado ? (typeof data.seccion.grado === 'object' ? data.seccion.grado.id : data.seccion.grado) : '', Validators.required]
     });
+  }
+
+  onEstadoChange(event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.form.get('estado')?.setValue(checked ? 'activa' : 'cerrada');
   }
   onCancel() {
     this.dialogRef.close();
   }
-  onSubmit() {
-    if (this.form.valid) {
-      this.dialogRef.close(this.form.value);
+onSubmit() {
+  if (this.form.valid) {
+    // Normalizar por si acaso
+    let formValue = { ...this.form.value };
+    if (formValue.estado !== 'activa' && formValue.estado !== 'cerrada') {
+      formValue.estado = formValue.estado ? 'activa' : 'cerrada';
     }
+    this.dialogRef.close(formValue);
   }
+}
+
 }

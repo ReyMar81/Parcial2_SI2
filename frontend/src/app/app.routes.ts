@@ -7,7 +7,6 @@ import { DashboardWelcomeComponent } from './dashboard-welcome/dashboard-welcome
 import { GradosCrudComponent } from './aulas/grados/grados-crud.component';
 import { SeccionesCrudComponent } from './aulas/secciones/secciones-crud.component';
 
-
 export const routes: Routes = [
   { path: '', component: LoginComponent },
   {
@@ -38,6 +37,7 @@ export const routes: Routes = [
           { path: 'secciones', component: SeccionesCrudComponent },
         ]
       },
+      { path: 'inscripcion', loadComponent: () => import('./inscripcion/inscripcion.component').then(m => m.InscripcionFormComponent) },
       { path: 'perfil', component: PerfilComponent },
       { path: 'cambiar-password', component: CambiarPasswordComponent },
     ]

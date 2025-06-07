@@ -1,81 +1,70 @@
-<div class="perfil-container mx-auto max-w-md p-8 bg-white rounded shadow-md mt-8">
-  <h2 class="text-2xl font-bold mb-6 text-blue-700">Perfil de Usuario</h2>
+<div class="pt-10 px-8 max-w-3xl mx-auto">
+  <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-8">Perfil de Usuario</h2>
 
-  <ng-container *ngIf="perfil; else cargando">
-    <!-- Superadmin -->
-    <mat-card class="mb-4" *ngIf="perfil.is_superuser">
-      <mat-card-title>Superadministrador</mat-card-title>
-      <mat-card-content>
-        <div><strong>Nombre de usuario:</strong> {{ perfil.username }}</div>
-        <div><strong>ID:</strong> {{ perfil.id }}</div>
-        <div><strong>Privilegios:</strong></div>
-        <ul>
-          <li *ngFor="let priv of perfil.privilegios">{{ priv }}</li>
-        </ul>
-      </mat-card-content>
-    </mat-card>
+  <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 bg-blue-50 dark:bg-slate-800 rounded-xl shadow p-8">
+    <!-- Avatar con ícono de usuario -->
+    <div class="flex-shrink-0">
+      <div class="w-32 h-32 bg-blue-200 dark:bg-blue-900 rounded-full flex items-center justify-center">
+        <!-- Icono User (Heroicons Outline) -->
+        <svg xmlns="http://www.w3.org/2000/svg" 
+            class="w-16 h-16 text-blue-900 dark:text-white" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M5.121 17.804A9.001 9.001 0 0112 15a9.001 9.001 0 016.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+    <!-- Info principal -->
+    <div class="flex-1 w-full">
+      <div class="mb-4">
+        <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">Usuario:</span>
+        <span class="text-xl font-bold ml-2 dark:text-white">{{ perfil?.username }}</span>
+      </div>
+      <div class="mb-4 flex gap-6">
+        <div *ngIf="perfil?.roles?.length">
+          <span class="text-gray-500 dark:text-gray-400">Rol{{ perfil?.roles.length > 1 ? 'es' : '' }}</span>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <span *ngFor="let rol of perfil.roles"
+                  class="bg-blue-200 dark:bg-blue-950 text-blue-800 dark:text-blue-200 rounded-full px-3 py-1 text-xs font-semibold">
+              {{ rol }}
+            </span>
+          </div>
+        </div>
+      </div>
 
-    <!-- Alumno -->
-    <mat-card class="mb-4" *ngIf="perfil.alumno">
-      <mat-card-title>Perfil Alumno</mat-card-title>
-      <mat-card-content>
-        <div><strong>Nombre:</strong> {{ perfil.alumno.persona.nombre }} {{ perfil.alumno.persona.apellido_paterno }}</div>
-        <div><strong>Registro:</strong> {{ perfil.alumno.registro }}</div>
-        <div><strong>CI:</strong> {{ perfil.alumno.persona.ci }}</div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Tutor -->
-    <mat-card class="mb-4" *ngIf="perfil.tutor">
-      <mat-card-title>Perfil Tutor</mat-card-title>
-      <mat-card-content>
-        <div><strong>Nombre:</strong> {{ perfil.tutor.persona.nombre }} {{ perfil.tutor.persona.apellido_paterno }}</div>
-        <div><strong>Ocupación:</strong> {{ perfil.tutor.ocupacion }}</div>
-        <div><strong>CI:</strong> {{ perfil.tutor.persona.ci }}</div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Alumnos asociados al tutor -->
-    <mat-card class="mb-4" *ngIf="perfil.alumnos_asociados?.length">
-      <mat-card-title>Alumnos Asociados</mat-card-title>
-      <mat-card-content>
-        <ul>
+      <!-- Bloques específicos de tipo de usuario -->
+      <div *ngIf="esSuperadmin" class="mt-4">
+        <span class="inline-block bg-yellow-300 dark:bg-yellow-600 text-yellow-900 dark:text-yellow-100 font-bold px-4 py-1 rounded">
+          Superadministrador
+        </span>
+      </div>
+      <div *ngIf="esAlumno" class="mt-4">
+        <span class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Perfil Alumno</span>
+        <div>Nombre: <span class="font-semibold dark:text-white">{{ perfil.alumno?.persona?.nombre }} {{ perfil.alumno?.persona?.apellido_paterno }}</span></div>
+        <div>Registro: <span class="font-semibold dark:text-white">{{ perfil.alumno?.registro }}</span></div>
+        <div>CI: <span class="font-semibold dark:text-white">{{ perfil.alumno?.persona?.ci }}</span></div>
+      </div>
+      <div *ngIf="esTutor" class="mt-4">
+        <span class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Perfil Tutor</span>
+        <div>Nombre: <span class="font-semibold dark:text-white">{{ perfil.tutor?.persona?.nombre }} {{ perfil.tutor?.persona?.apellido_paterno }}</span></div>
+        <div>Ocupación: <span class="font-semibold dark:text-white">{{ perfil.tutor?.ocupacion }}</span></div>
+        <div>CI: <span class="font-semibold dark:text-white">{{ perfil.tutor?.persona?.ci }}</span></div>
+      </div>
+      <div *ngIf="esMaestro" class="mt-4">
+        <span class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Perfil Maestro</span>
+        <div>Nombre: <span class="font-semibold dark:text-white">{{ perfil.maestro?.persona?.nombre }} {{ perfil.maestro?.persona?.apellido_paterno }}</span></div>
+        <div>CI: <span class="font-semibold dark:text-white">{{ perfil.maestro?.persona?.ci }}</span></div>
+      </div>
+      <div *ngIf="perfil?.alumnos_asociados?.length" class="mt-4">
+        <span class="block font-bold text-gray-700 dark:text-gray-200 mb-1">Alumnos Asociados:</span>
+        <ul class="list-disc list-inside text-gray-700 dark:text-gray-300">
           <li *ngFor="let alumno of perfil.alumnos_asociados">
-            {{ alumno.persona.nombre }} {{ alumno.persona.apellido_paterno }} (Registro: {{ alumno.registro }})
+            {{ alumno.persona?.nombre }} {{ alumno.persona?.apellido_paterno }} (Registro: {{ alumno.registro }})
           </li>
         </ul>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Maestro -->
-    <mat-card class="mb-4" *ngIf="perfil.maestro">
-      <mat-card-title>Perfil Maestro</mat-card-title>
-      <mat-card-content>
-        <div><strong>Nombre:</strong> {{ perfil.maestro.persona.nombre }} {{ perfil.maestro.persona.apellido_paterno }}</div>
-        <div><strong>CI:</strong> {{ perfil.maestro.persona.ci }}</div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Roles (Grupos) -->
-    <mat-card class="mb-4" *ngIf="perfil.roles?.length">
-      <mat-card-title>Roles</mat-card-title>
-      <mat-chip-list>
-        <mat-chip *ngFor="let rol of perfil.roles">{{ rol }}</mat-chip>
-      </mat-chip-list>
-    </mat-card>
-
-    <!-- Privilegios -->
-    <mat-card class="mb-4" *ngIf="perfil.privilegios?.length && !perfil.is_superuser">
-      <mat-card-title>Privilegios</mat-card-title>
-      <ul>
-        <li *ngFor="let priv of perfil.privilegios">{{ priv }}</li>
-      </ul>
-    </mat-card>
-  </ng-container>
-
-  <!-- Cargando -->
-  <ng-template #cargando>
-    <mat-progress-spinner diameter="30" mode="indeterminate"></mat-progress-spinner>
-    <p class="mt-4">Cargando perfil...</p>
-  </ng-template>
+      </div>
+    </div>
+  </div>
 </div>

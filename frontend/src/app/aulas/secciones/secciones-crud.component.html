@@ -38,13 +38,13 @@
             <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ seccion.nombre }}</td>
             <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ seccion.aula }}</td>
             <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ seccion.capacidad_maxima }}</td>
-            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ seccion.grado }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ getNombreGrado(seccion.grado) }}</td>
             <td class="py-2 px-4 text-center">
               <span [ngClass]="{
-                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': seccion.estado,
-                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': !seccion.estado
+                'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': seccion.estado === 'activa',
+                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': seccion.estado === 'cerrada'
               }" class="px-3 py-1 rounded-full text-xs font-semibold">
-                {{ seccion.estado ? 'Activo' : 'Inactivo' }}
+                {{ seccion.estado === 'activa' ? 'Activa' : 'Cerrada' }}
               </span>
             </td>
             <td class="py-2 px-4 text-center flex gap-2 justify-center">

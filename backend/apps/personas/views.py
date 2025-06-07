@@ -1,13 +1,15 @@
 from rest_framework import viewsets
 from drf_spectacular.utils import extend_schema
-from .models import Persona, Alumno, Maestro, Tutor, TutorAlumno
-from .serializers import PersonaSerializer, AlumnoSerializer, MaestroSerializer, TutorSerializer, TutorAlumnoSerializer, InscripcionSerializer
+from apps.personas.models import Persona, Alumno, Maestro, Tutor, TutorAlumno
+from apps.personas.serializers import PersonaSerializer, AlumnoSerializer, MaestroSerializer, TutorSerializer, TutorAlumnoSerializer, InscripcionSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.personas.services import crear_usuario_persona_rol
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from apps.secciones.models import Seccion, SeccionAlumno
+from datetime import date
 
 class PersonaViewSet(viewsets.ModelViewSet):
     queryset = Persona.objects.all()
@@ -39,10 +41,12 @@ def inscripcion(request):
     alumno_data = request.data.get('alumno')
     tutor_data = request.data.get('tutor')
     tipo_relacion = request.data.get('tipo_relacion', '')
+    seccion_id = request.data.get('seccion_id')
+    ciclo = request.data.get('ciclo')
 
     # Validaciones mínimas
-    if not alumno_data or not tutor_data:
-        return Response({'error': 'Datos de alumno y tutor son requeridos'}, status=status.HTTP_400_BAD_REQUEST)
+    if not alumno_data or not tutor_data or not seccion_id or not ciclo:
+        return Response({'error': 'Datos de alumno, tutor, sección y ciclo son requeridos'}, status=status.HTTP_400_BAD_REQUEST)
     
     # No permitir inscripción duplicada por CI
     from apps.personas.models import Persona
@@ -61,6 +65,31 @@ def inscripcion(request):
         alumno=alumno_obj,
         tipo_relacion=tipo_relacion
     )
+
+    # Crear inscripción en sección
+
+    try:
+        seccion = Seccion.objects.get(id=seccion_id)
+    except Seccion.DoesNotExist:
+        return Response({'error': 'La sección seleccionada no existe'}, status=status.HTTP_400_BAD_REQUEST)
+    seccion_alumno = SeccionAlumno(
+        fecha_inscripcion=date.today(),
+        ciclo=ciclo,
+        estado='activo',
+        seccion=seccion,
+        alumno=alumno_obj
+    )
+    # Validar con el serializer de SeccionAlumno
+    from apps.secciones.serializers import SeccionAlumnoSerializer
+    serializer = SeccionAlumnoSerializer(data={
+        'fecha_inscripcion': seccion_alumno.fecha_inscripcion,
+        'ciclo': ciclo,
+        'estado': 'activo',
+        'seccion': seccion.id,
+        'alumno': alumno_obj.id
+    })
+    serializer.is_valid(raise_exception=True)
+    seccion_alumno.save()
 
     # Respuesta (Eliminar en producción)
     resp = {

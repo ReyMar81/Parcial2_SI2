@@ -4,24 +4,41 @@ import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
+// ---- Interfaces ----
+export interface Materia {
+  id?: number;
+  nombre: string;
+  descripcion: string;
+}
+export interface Grado {
+  id: number;
+  nombre: string;
+  nivel?: string;
+  descripcion?: string;
+}
+export interface Seccion {
+  id: number;
+  nombre: string;
+  aula: string;
+  capacidad_maxima: number;
+  estado: 'activa' | 'cerrada';
+  grado: number | Grado;
+}
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
-  // Cambiar router a público para acceso desde componentes
   public router = inject(Router);
-  private apiUrl = 'http://localhost:8000/auth/token/';
-  private perfilUrl = 'http://localhost:8000/api/personas/perfil/';
 
-  getPerfil(): Observable<any> {
-    return this.http.get<any>(this.perfilUrl).pipe(
-        tap((profile: any) => {
-        // Aquí puedes guardar roles, privilegios, usuario, etc.
-        localStorage.setItem('perfil', JSON.stringify(profile));
-        }),
-        catchError(this.handleError)
-    );
-    }
+  // --- Endpoints centralizados ---
+  private API_BASE = 'http://localhost:8000';
+  private apiUrl = `${this.API_BASE}/auth/token/`;
+  private perfilUrl = `${this.API_BASE}/api/personas/perfil/`;
+  private inscripcionUrl = `${this.API_BASE}/api/personas/inscripcion/`;
+  private materiaUrl = `${this.API_BASE}/api/materias/materias/`;
+  private gradosUrl = `${this.API_BASE}/api/secciones/grados/`;
+  private seccionesUrl = `${this.API_BASE}/api/secciones/secciones/`;
 
+  // --- Auth & Perfil ---
   login(username: string, password: string): Observable<any> {
     return this.http.post<any>(this.apiUrl, { username, password }).pipe(
       tap((resp: any) => {
@@ -31,18 +48,28 @@ export class AuthService {
       catchError(this.handleError)
     );
   }
-get perfil() {
-  const perfilString = localStorage.getItem('perfil');
-  return perfilString ? JSON.parse(perfilString) : null;
-}
+  
+  getPerfil(): Observable<any> {
+    return this.http.get<any>(this.perfilUrl).pipe(
+      tap((profile: any) => {
+        localStorage.setItem('perfil', JSON.stringify(profile));
+      }),
+      catchError(this.handleError)
+    );
+  }
 
-hasRole(role: string): boolean {
-  return this.perfil?.roles?.includes(role) || false;
-}
+  get perfil() {
+    const perfilString = localStorage.getItem('perfil');
+    return perfilString ? JSON.parse(perfilString) : null;
+  }
 
-hasPrivilegio(priv: string): boolean {
-  return this.perfil?.privilegios?.includes(priv) || false;
-}
+  hasRole(role: string): boolean {
+    return this.perfil?.roles?.includes(role) || false;
+  }
+
+  hasPrivilegio(priv: string): boolean {
+    return this.perfil?.privilegios?.includes(priv) || false;
+  }
 
   logout() {
     localStorage.removeItem('access_token');
@@ -56,4 +83,90 @@ hasPrivilegio(priv: string): boolean {
   private handleError(error: HttpErrorResponse) {
     return throwError(() => error);
   }
+
+  // --- Materias CRUD ---
+  getMaterias(): Observable<Materia[]> {
+    return this.http.get<Materia[]>(this.materiaUrl).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addMateria(materia: Partial<Materia>): Observable<Materia> {
+    return this.http.post<Materia>(this.materiaUrl, materia).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateMateria(id: number, materia: Partial<Materia>): Observable<Materia> {
+    return this.http.put<Materia>(`${this.materiaUrl}${id}/`, materia).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteMateria(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.materiaUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Grados CRUD ---
+  getGrados(): Observable<Grado[]> {
+    return this.http.get<Grado[]>(this.gradosUrl).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addGrado(grado: Partial<Grado>): Observable<Grado> {
+    return this.http.post<Grado>(this.gradosUrl, grado).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateGrado(id: number, grado: Partial<Grado>): Observable<Grado> {
+    return this.http.put<Grado>(`${this.gradosUrl}${id}/`, grado).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteGrado(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.gradosUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+// --- Secciones CRUD ---
+getSecciones(): Observable<Seccion[]> {
+  return this.http.get<Seccion[]>(this.seccionesUrl).pipe(
+    catchError(this.handleError)
+  );
+}
+
+addSeccion(seccion: Partial<Seccion>): Observable<Seccion> {
+  return this.http.post<Seccion>(this.seccionesUrl, seccion).pipe(
+    catchError(this.handleError)
+  );
+}
+
+updateSeccion(id: number, seccion: Partial<Seccion>): Observable<Seccion> {
+  return this.http.put<Seccion>(`${this.seccionesUrl}${id}/`, seccion).pipe(
+    catchError(this.handleError)
+  );
+}
+
+deleteSeccion(id: number): Observable<any> {
+  return this.http.delete<any>(`${this.seccionesUrl}${id}/`).pipe(
+    catchError(this.handleError)
+  );
+}
+
+desactivarSeccion(id: number): Observable<Seccion> {
+  return this.http.patch<Seccion>(`${this.seccionesUrl}${id}/`, { estado: 'cerrada' }).pipe(
+    catchError(this.handleError)
+  );
+}
+inscribirAlumno(data: any): Observable<any> {
+  return this.http.post<any>(this.inscripcionUrl, data).pipe(
+    catchError(this.handleError)
+  );
+}
 }

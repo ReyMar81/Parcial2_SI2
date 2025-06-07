@@ -20,6 +20,7 @@ class SeccionAlumnoSerializer(serializers.ModelSerializer):
     def validate(self, data):
         alumno = data['alumno']
         ciclo = data['ciclo']
+        seccion = data['seccion']
 
         # Verificar que no exista ya inscripción activa para este alumno, ciclo y sección
         existe = SeccionAlumno.objects.filter(
@@ -31,6 +32,11 @@ class SeccionAlumnoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Este alumno ya está inscrito activamente en una sección para este ciclo escolar.'
             )
+
+        # Validación de capacidad máxima de la sección
+        inscritos = SeccionAlumno.objects.filter(seccion=seccion, ciclo=ciclo, estado='activo').count()
+        if inscritos >= seccion.capacidad_maxima:
+            raise serializers.ValidationError('La sección ya está llena.')
 
         # --- Validación de aprobación del ciclo anterior ---
         # Solo si NO es el primer ciclo

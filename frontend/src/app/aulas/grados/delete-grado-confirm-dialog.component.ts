@@ -20,8 +20,7 @@ import { CommonModule } from '@angular/common';
         <button mat-flat-button color="warn" (click)="onDelete()" class="dark:text-blue-200">Eliminar</button>
       </div>
     </div>
-  `,
-  styles: [``]
+  `
 })
 export class DeleteGradoConfirmDialogComponent {
   constructor(

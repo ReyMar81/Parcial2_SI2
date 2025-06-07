@@ -57,3 +57,5 @@ class InscripcionSerializer(serializers.Serializer):
     alumno = PersonaSerializer()
     tutor = TutorPersonaSerializer()
     tipo_relacion = serializers.CharField()
+    seccion_id = serializers.IntegerField(write_only=True)
+    ciclo = serializers.CharField()

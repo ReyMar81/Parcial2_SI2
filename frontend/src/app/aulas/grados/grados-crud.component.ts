@@ -1,17 +1,11 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { GradoFormDialogComponent } from './grado-form-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { CommonModule } from '@angular/common';
+import { GradoFormDialogComponent } from './grado-form-dialog.component';
 import { DeleteGradoConfirmDialogComponent } from './delete-grado-confirm-dialog.component';
-
-export interface Grado {
-  id: number;
-  nombre: string;
-  nivel?: string;
-  descripcion?: string;
-}
+import { AuthService, Grado } from '../../auth.service';
 
 @Component({
   selector: 'app-grados-crud',
@@ -19,74 +13,83 @@ export interface Grado {
   imports: [
     CommonModule,
     MatDialogModule,
-    GradoFormDialogComponent,
     MatIconModule,
     MatButtonModule,
+    GradoFormDialogComponent,
     DeleteGradoConfirmDialogComponent
   ],
   templateUrl: './grados-crud.component.html',
-  styleUrls: ['./grados-crud.component.css'],
+  styleUrls: ['./grados-crud.component.css']
 })
-export class GradosCrudComponent {
-  grados: Grado[] = [
-    { id: 1, nombre: 'Primer Grado', nivel: 'Básico', descripcion: 'Primer año escolar' },
-    { id: 2, nombre: 'Segundo Grado', nivel: 'Básico', descripcion: 'Segundo año escolar' },
-    { id: 3, nombre: 'Tercer Grado', nivel: 'Básico', descripcion: 'Tercer año escolar' }
-  ];
-  nextId = 4;
-  alert: { type: 'success' | 'error' | 'warning', message: string } | null = null;
-  deleteDialogRef: any = null;
-  deleteTarget: Grado | null = null;
+export class GradosCrudComponent implements OnInit {
+  grados: Grado[] = [];
+  alert: { type: string, message: string } | null = null;
 
-  constructor(private dialog: MatDialog) {}
+  constructor(
+    private authService: AuthService,
+    private dialog: MatDialog
+  ) {}
+
+  ngOnInit() {
+    this.loadGrados();
+  }
+
+  loadGrados() {
+    this.authService.getGrados().subscribe({
+      next: (data) => this.grados = data,
+      error: () => this.showAlert('error', 'Error al cargar grados.')
+    });
+  }
 
   openAddGrado() {
     const dialogRef = this.dialog.open(GradoFormDialogComponent, {
-      width: '400px',
+      width: '500px',
       data: {}
     });
-    dialogRef.afterClosed().subscribe((result: any) => {
+
+    dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.grados.push({ id: this.nextId++, ...result });
-        this.showAlert('success', 'Grado agregado correctamente');
+        this.showAlert('success', 'Grado agregado exitosamente.');
+        this.loadGrados();
       }
     });
   }
 
   openEditGrado(grado: Grado) {
     const dialogRef = this.dialog.open(GradoFormDialogComponent, {
-      width: '400px',
+      width: '500px',
       data: { grado }
     });
-    dialogRef.afterClosed().subscribe((result: any) => {
+
+    dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        Object.assign(grado, result);
-        this.showAlert('success', 'Grado editado correctamente');
+        this.showAlert('success', 'Grado editado exitosamente.');
+        this.loadGrados();
       }
     });
   }
 
   openDeleteDialog(grado: Grado) {
-    this.deleteTarget = grado;
-    this.deleteDialogRef = this.dialog.open(DeleteGradoConfirmDialogComponent, {
-      width: '350px',
+    const dialogRef = this.dialog.open(DeleteGradoConfirmDialogComponent, {
+      width: '400px',
       data: { nombre: grado.nombre }
     });
-    this.deleteDialogRef.afterClosed().subscribe((result: boolean) => {
+
+    dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.deleteGrado(grado);
+        this.authService.deleteGrado(grado.id).subscribe({
+          next: () => {
+            this.showAlert('success', 'Grado eliminado.');
+            this.loadGrados();
+          },
+          error: () => this.showAlert('error', 'No se pudo eliminar el grado.')
+        });
       }
-      this.deleteTarget = null;
     });
   }
 
-  deleteGrado(grado: Grado) {
-    this.grados = this.grados.filter(g => g.id !== grado.id);
-    this.showAlert('warning', 'Grado eliminado');
-  }
-
-  showAlert(type: 'success' | 'error' | 'warning', message: string) {
+  showAlert(type: string, message: string) {
     this.alert = { type, message };
-    setTimeout(() => this.alert = null, 3000);
+    setTimeout(() => { this.alert = null; }, 3000);
   }
 }

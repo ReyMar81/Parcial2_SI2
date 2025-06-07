@@ -1,0 +1,216 @@
+<div class="min-h-screen w-full flex flex-col items-center justify-start bg-transparent">
+  <div class="w-full flex flex-col gap-8 px-2 sm:px-8 md:px-16 lg:px-32 xl:px-48 2xl:px-64 py-8">
+    <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-200 text-center mb-2">
+      Inscripción de Alumno
+    </h2>
+    <p class="text-center text-base text-gray-500 dark:text-gray-300 mb-4">
+      Complete todos los campos para registrar la inscripción y obtenga las credenciales para alumno y tutor.
+    </p>
+    <!-- Card del formulario -->
+    <div class="w-full bg-white dark:bg-[#232a3a] rounded-2xl shadow-xl p-8 flex flex-col gap-8 transition-all duration-300">
+      <!-- Mensaje de error -->
+      <div *ngIf="errorMsg" class="mb-4 px-4 py-2 bg-red-100 text-red-800 rounded border border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700 text-center font-semibold shadow">
+        {{ errorMsg }}
+      </div>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-10" autocomplete="off">
+        <!-- Datos del Alumno -->
+        <div>
+          <h3 class="text-xl font-bold text-blue-700 dark:text-blue-300 mb-3">Datos del Alumno</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
+              <input matInput formControlName="nombre_alumno" placeholder="Nombre"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
+              <input matInput formControlName="ap_paterno_alumno" placeholder="Apellido Paterno"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Apellido Materno <span class="text-red-500">*</span></label>
+              <input matInput formControlName="ap_materno_alumno" placeholder="Apellido Materno"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Género <span class="text-red-500">*</span></label>
+              <mat-select formControlName="genero_alumno"
+                class="w-full rounded-lg bg-blue-50 dark:bg-[#232531] focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] text-blue-900 dark:text-blue-100">
+                <mat-option value="M">Masculino</mat-option>
+                <mat-option value="F">Femenino</mat-option>
+              </mat-select>
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">CI <span class="text-red-500">*</span></label>
+              <input matInput formControlName="ci_alumno" placeholder="Carnet de Identidad"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Dirección</label>
+              <input matInput formControlName="direccion_alumno" placeholder="Dirección"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Contacto</label>
+              <input matInput formControlName="contacto_alumno" placeholder="Contacto"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label>
+              <input matInput [matDatepicker]="pickerAlumno" formControlName="fecha_nacimiento_alumno" placeholder="YYYY-MM-DD"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+              <mat-datepicker-toggle matSuffix [for]="pickerAlumno"></mat-datepicker-toggle>
+              <mat-datepicker #pickerAlumno></mat-datepicker>
+            </div>
+          </div>
+        </div>
+        <!-- Datos del Tutor -->
+        <div>
+          <h3 class="text-xl font-bold text-blue-700 dark:text-blue-300 mb-3">Datos del Tutor</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
+              <input matInput formControlName="nombre_tutor" placeholder="Nombre"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
+              <input matInput formControlName="ap_paterno_tutor" placeholder="Apellido Paterno"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Apellido Materno <span class="text-red-500">*</span></label>
+              <input matInput formControlName="ap_materno_tutor" placeholder="Apellido Materno"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Género <span class="text-red-500">*</span></label>
+              <mat-select formControlName="genero_tutor"
+                class="w-full rounded-lg bg-blue-50 dark:bg-[#232531] focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] text-blue-900 dark:text-blue-100">
+                <mat-option value="M">Masculino</mat-option>
+                <mat-option value="F">Femenino</mat-option>
+              </mat-select>
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">CI <span class="text-red-500">*</span></label>
+              <input matInput formControlName="ci_tutor" placeholder="Carnet de Identidad"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Dirección</label>
+              <input matInput formControlName="direccion_tutor" placeholder="Dirección"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Contacto</label>
+              <input matInput formControlName="contacto_tutor" placeholder="Contacto"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label>
+              <input matInput [matDatepicker]="pickerTutor" formControlName="fecha_nacimiento_tutor" placeholder="YYYY-MM-DD"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+              <mat-datepicker-toggle matSuffix [for]="pickerTutor"></mat-datepicker-toggle>
+              <mat-datepicker #pickerTutor></mat-datepicker>
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Ocupación</label>
+              <input matInput formControlName="ocupacion_tutor" placeholder="Ocupación"
+                class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+            </div>
+          </div>
+        </div>
+        <!-- Relación, sección, ciclo -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Tipo de Relación <span class="text-red-500">*</span></label>
+            <input matInput formControlName="tipo_relacion" placeholder="Ej: Madre, Padre, Tío, Tutor, ..."
+              class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+          </div>
+          <div>
+            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Sección <span class="text-red-500">*</span></label>
+            <mat-select formControlName="seccion_id"
+              class="w-full rounded-lg bg-blue-50 dark:bg-[#232531] focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] text-blue-900 dark:text-blue-100">
+              <mat-option *ngFor="let seccion of secciones" [value]="seccion.id">{{ seccion.nombre }}</mat-option>
+            </mat-select>
+          </div>
+          <div>
+            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Ciclo <span class="text-red-500">*</span></label>
+            <input matInput formControlName="ciclo" placeholder="Ej: 2025"
+              class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+          </div>
+        </div>
+        <div class="flex justify-center mt-8">
+          <button mat-flat-button color="primary" type="submit"
+            class="px-10 py-2 text-lg rounded-lg font-bold shadow transition-all duration-300 bg-blue-600 hover:bg-blue-700 text-white"
+            [disabled]="form.invalid || loading">
+            <mat-spinner *ngIf="loading" diameter="22"></mat-spinner>
+            <span *ngIf="!loading">Inscribir</span>
+            <span *ngIf="loading">Inscribiendo...</span>
+          </button>
+        </div>
+      </form>
+      <!-- Mensaje de éxito -->
+        <div *ngIf="successData" 
+        class="mt-10 
+            bg-green-50 
+            dark:bg-slate-700 
+            p-6 rounded-xl shadow flex flex-col gap-4 items-center transition-colors duration-300">
+
+        <h3 class="text-xl font-bold text-green-700 dark:text-green-200 flex items-center gap-2">
+            <mat-icon>check_circle</mat-icon>
+            Inscripción Exitosa
+        </h3>
+        
+        <div class="w-full flex flex-col md:flex-row justify-around gap-6">
+            <div>
+            <div class="font-bold text-blue-700 dark:text-blue-200 mb-2">Alumno</div>
+            <div class="flex items-center gap-2">
+                <span>Usuario:</span>
+                <span class="font-mono">{{ successData.alumno.username }}</span>
+                <button mat-icon-button (click)="copiar(successData.alumno.username)">
+                <mat-icon>content_copy</mat-icon>
+                </button>
+            </div>
+            <div class="flex items-center gap-2 mt-1">
+                <span>Contraseña:</span>
+                <span class="font-mono">{{ successData.alumno.password }}</span>
+                <button mat-icon-button (click)="copiar(successData.alumno.password)">
+                <mat-icon>content_copy</mat-icon>
+                </button>
+            </div>
+            </div>
+            <div>
+            <div class="font-bold text-blue-700 dark:text-blue-200 mb-2">Tutor</div>
+            <div class="flex items-center gap-2">
+                <span>Usuario:</span>
+                <span class="font-mono">{{ successData.tutor.username }}</span>
+                <button mat-icon-button (click)="copiar(successData.tutor.username)">
+                <mat-icon>content_copy</mat-icon>
+                </button>
+            </div>
+            <div class="flex items-center gap-2 mt-1">
+                <span>Contraseña:</span>
+                <span class="font-mono">{{ successData.tutor.password }}</span>
+                <button mat-icon-button (click)="copiar(successData.tutor.password)">
+                <mat-icon>content_copy</mat-icon>
+                </button>
+            </div>
+            </div>
+        </div>
+        
+        <button mat-stroked-button 
+            color="primary" 
+            (click)="successData = null"
+            class="mt-4 px-8 py-2 rounded-lg 
+            bg-white dark:bg-slate-700 
+            text-blue-700 dark:text-blue-200 
+            font-bold shadow 
+            hover:bg-blue-100 dark:hover:bg-slate-600
+            transition">
+            Inscribir otro alumno
+        </button>
+        </div>
+    </div>
+  </div>
+</div>

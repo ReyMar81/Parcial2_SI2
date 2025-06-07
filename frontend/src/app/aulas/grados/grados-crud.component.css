@@ -1,2 +1,9 @@
-h2 { color: #2563eb; }
-.page-indicator { background: none; box-shadow: none; border-radius: 0; padding: 0; margin: 0; max-width: none; text-align: left; }
+.dark .mat-mdc-select-panel,
+.dark .mat-mdc-option {
+  color: #cbd5e1 !important;
+  background-color: #232a3a !important;
+}
+.dark .mat-mdc-option.mat-selected {
+  background: #26304a !important;
+  color: #60a5fa !important;
+}
