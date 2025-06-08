@@ -5,6 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 from .serializers import RolSerializer, PrivilegioSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenObtainPairSerializer
 
 User = get_user_model()
 class GroupViewSet(viewsets.ModelViewSet):
@@ -34,3 +36,6 @@ class UsuarioRolViewSet(viewsets.ViewSet):
         usuario.groups.set(grupos)
         usuario.save()
         return Response({'estado': 'Roles actualizados correctamente.'}, status=status.HTTP_200_OK)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

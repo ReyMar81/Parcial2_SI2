@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,11 +9,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule, MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { AuthService, MaestroResponse, MaestroCreate } from '../../auth.service';
-import { MaestroCredencialesDialogComponent } from './maestro-credenciales-dialog.component';
+import { AuthService, AlumnoResponse, AlumnoCreate } from '../../auth.service';
 
 @Component({
-  selector: 'app-maestro-form-dialog',
+  selector: 'app-alumno-form-dialog',
   standalone: true,
   imports: [
     CommonModule,
@@ -27,14 +26,13 @@ import { MaestroCredencialesDialogComponent } from './maestro-credenciales-dialo
     MatDatepickerModule,
     MatNativeDateModule,
     ReactiveFormsModule,
-    MaestroCredencialesDialogComponent
   ],
   template: `
     <div class="w-full max-w-2xl p-0 sm:p-8 bg-white dark:bg-[#232a3a] rounded-2xl shadow-lg transition-all duration-300">
       <div class="flex flex-col items-center mb-4">
         <mat-icon class="text-5xl text-blue-500 mb-2">person</mat-icon>
         <h2 class="text-2xl font-bold text-center text-blue-800 dark:text-blue-200">
-          {{ data.isEdit ? 'Editar Maestro' : 'Agregar Maestro' }}
+          {{ data.isEdit ? 'Editar Alumno' : 'Editar Alumno' }}
         </h2>
       </div>
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 md:grid-cols-2 gap-6" autocomplete="off">
@@ -64,7 +62,6 @@ import { MaestroCredencialesDialogComponent } from './maestro-credenciales-dialo
             </mat-select>
           </div>
         </div>
-
         <!-- Segunda columna -->
         <div class="flex flex-col gap-4">
           <div>
@@ -90,49 +87,49 @@ import { MaestroCredencialesDialogComponent } from './maestro-credenciales-dialo
             <mat-datepicker #picker></mat-datepicker>
           </div>
           <div>
-            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Especialidad <span class="text-red-500">*</span></label>
-            <input matInput formControlName="especialidad" required placeholder="Especialidad"
+            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Registro <span class="text-red-500">*</span></label>
+            <input matInput formControlName="registro" required placeholder="Registro"
               class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] text-blue-900 dark:text-blue-100"/>
           </div>
         </div>
         <div class="md:col-span-2 flex gap-4 mt-4 w-full justify-center">
           <button mat-stroked-button color="primary" type="button" (click)="onCancel()" class="dark:text-blue-200">Cancelar</button>
           <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid" class="dark:text-blue-200">
-            {{ data.isEdit ? 'Actualizar' : 'Agregar' }}
+            {{ data.isEdit ? 'Actualizar' : 'Actualizar' }}
           </button>
         </div>
       </form>
     </div>
   `
 })
-export class MaestroFormDialogComponent {
+export class AlumnoFormDialogComponent {
   form: FormGroup;
 
-    constructor(
+  constructor(
     private fb: FormBuilder,
-    private dialogRef: MatDialogRef<MaestroFormDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { maestro?: MaestroResponse, isEdit?: boolean },
+    private dialogRef: MatDialogRef<AlumnoFormDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { alumno?: AlumnoResponse, isEdit?: boolean },
     private authService: AuthService,
-    private dialog: MatDialog 
   ) {
     this.form = this.fb.group({
-      nombre: [data.maestro?.persona?.nombre || '', Validators.required],
-      apellido_paterno: [data.maestro?.persona?.apellido_paterno || '', Validators.required],
-      apellido_materno: [data.maestro?.persona?.apellido_materno || ''],
-      genero: [data.maestro?.persona?.genero || '', Validators.required],
-      ci: [data.maestro?.persona?.ci || '', Validators.required],
-      direccion: [data.maestro?.persona?.direccion || ''],
-      contacto: [data.maestro?.persona?.contacto || ''],
+      nombre: [data.alumno?.persona?.nombre || '', Validators.required],
+      apellido_paterno: [data.alumno?.persona?.apellido_paterno || '', Validators.required],
+      apellido_materno: [data.alumno?.persona?.apellido_materno || ''],
+      genero: [data.alumno?.persona?.genero || '', Validators.required],
+      ci: [data.alumno?.persona?.ci || '', Validators.required],
+      direccion: [data.alumno?.persona?.direccion || ''],
+      contacto: [data.alumno?.persona?.contacto || ''],
       fecha_nacimiento: [
-        data.maestro?.persona?.fecha_nacimiento
-          ? this.parseDate(data.maestro.persona.fecha_nacimiento)
+        data.alumno?.persona?.fecha_nacimiento
+          ? this.parseDate(data.alumno.persona.fecha_nacimiento)
           : null,
         Validators.required
       ],
-      especialidad: [data.maestro?.especialidad || '', Validators.required]
+      registro: [data.alumno?.registro || '', Validators.required]
     });
   }
-    parseDate(dateString: string): Date | null {
+
+  parseDate(dateString: string): Date | null {
     if (!dateString) return null;
     const parts = dateString.split('-');
     if (parts.length !== 3) return null;
@@ -140,15 +137,17 @@ export class MaestroFormDialogComponent {
     const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
     return new Date(year, month, day);
-    }
+  }
 
   onCancel() {
     this.dialogRef.close();
   }
 
   onSubmit() {
-    if (this.form.valid) {
-    const personaData: any = {
+    if (this.form.valid && this.data.isEdit && this.data.alumno?.id) {
+      // Construye el objeto para el put
+      const personaData: any = {
+        id: this.data.alumno.persona.id,
         nombre: this.form.value.nombre,
         apellido_paterno: this.form.value.apellido_paterno,
         apellido_materno: this.form.value.apellido_materno,
@@ -157,48 +156,20 @@ export class MaestroFormDialogComponent {
         direccion: this.form.value.direccion,
         contacto: this.form.value.contacto,
         fecha_nacimiento: this.form.value.fecha_nacimiento
-        ? this.form.value.fecha_nacimiento.toISOString().split('T')[0]
-        : ''
-    };
+          ? this.form.value.fecha_nacimiento.toISOString().split('T')[0]
+          : ''
+      };
 
-    // Agrega el id si es edición
-    if (this.data.isEdit && this.data.maestro?.persona?.id) {
-        personaData.id = this.data.maestro.persona.id;
-    }
-
-    const maestroData: MaestroCreate = {
+      const alumnoData: AlumnoCreate = {
         persona: personaData,
-        especialidad: this.form.value.especialidad
-    };
+        registro: this.form.value.registro
+      };
 
-    if (this.data.isEdit && this.data.maestro?.id) {
-        // EDITAR MAESTRO
-        this.authService.updateMaestro(this.data.maestro.id, maestroData).subscribe({
+      this.authService.updateAlumno(this.data.alumno.id, alumnoData).subscribe({
         next: (response: any) => {
-            this.dialogRef.close(response);
+          this.dialogRef.close(response);
         }
-        });
-    } else {
-        // CREAR MAESTRO
-        this.authService.addMaestro(maestroData).subscribe({
-        next: (response: any) => {
-            // Cierra el form dialog actual
-            this.dialogRef.close();
-
-            // Abre el dialogo de credenciales
-            this.dialog.open(MaestroCredencialesDialogComponent, {
-                width: '400px',
-                data: {
-                    maestro: {
-                        username: response.maestro.username,
-                        password: response.maestro.password,
-                        registro: response.maestro.registro
-                    }
-                }
-            });
-        }
-        });
-    }
+      });
     }
   }
 }

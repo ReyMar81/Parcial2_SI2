@@ -1,11 +1,12 @@
+<!-- Aquí irá la tabla y lógica de asignaciones -->
 <div class="min-h-screen w-full flex flex-col items-center justify-start bg-transparent">
   <div class="w-full flex flex-col gap-7 px-2 sm:px-8 md:px-16 lg:px-32 xl:px-48 2xl:px-64 py-8">
-    <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-200 text-center">Gestión de Materias</h2>
+    <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-200 text-center">Gestión de Asignaciones Sección-Grado</h2>
     <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 items-start">
       <!-- Columna izquierda: buscar y agregar -->
       <div class="flex flex-col gap-2 w-full sm:w-auto">
         <div class="relative w-full sm:w-64 max-w-xs">
-          <input type="text" [(ngModel)]="search" (ngModelChange)="onSearchChange($event)" placeholder="Buscar por nombre o descripción..."
+          <input type="text" [(ngModel)]="search" (ngModelChange)="onSearchChange($event)" placeholder="Buscar por sección, grado o aula..."
             class="w-full rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-[#232a3a] py-2 pl-10 pr-8 text-blue-900 dark:text-blue-100 focus:ring-2 focus:ring-blue-400 transition placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm" />
           <span class="pointer-events-none absolute left-3 top-2.5 text-blue-400 dark:text-blue-500">
             <mat-icon>search</mat-icon>
@@ -14,9 +15,9 @@
             <mat-icon>close</mat-icon>
           </button>
         </div>
-        <button mat-raised-button color="primary" (click)="openAddMateria()">
+        <button mat-raised-button color="primary" (click)="openAddAsignacion()">
           <mat-icon>add</mat-icon>
-          <span>Agregar Materia</span>
+          <span>Agregar Asignación</span>
         </button>
       </div>
       <!-- Columna central: toggle -->
@@ -45,37 +46,40 @@
         <thead>
           <tr class="bg-blue-100 dark:bg-[#232531] text-blue-800 dark:text-blue-200">
             <th class="py-3 px-4 text-left">ID</th>
-            <th class="py-3 px-4 text-left">Nombre</th>
-            <th class="py-3 px-4 text-left">Descripción</th>
+            <th class="py-3 px-4 text-left">Grado</th>
+            <th class="py-3 px-4 text-left">Sección</th>
+            <th class="py-3 px-4 text-left">Aula</th>
+            <th class="py-3 px-4 text-left">Capacidad</th>
             <th class="py-3 px-4 text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let materia of materias" class="border-b border-blue-50 dark:border-[#232531] hover:bg-blue-50 dark:hover:bg-[#232834] transition">
-            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ materia.id }}</td>
-            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ materia.nombre }}</td>
-            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ materia.descripcion }}</td>
+          <tr *ngFor="let asignacion of asignaciones" class="border-b border-blue-50 dark:border-[#232531] hover:bg-blue-50 dark:hover:bg-[#232834] transition">
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ asignacion.id }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ asignacion.grado_nombre }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ asignacion.seccion_nombre }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ asignacion.aula }}</td>
+            <td class="py-2 px-4 text-blue-900 dark:text-blue-100">{{ asignacion.capacidad_maxima }}</td>
             <td class="py-2 px-4 text-center flex gap-2 justify-center">
-              <button mat-icon-button color="primary" (click)="openEditMateria(materia)">
+              <button mat-icon-button color="primary" (click)="openEditAsignacion(asignacion)" *ngIf="asignacion.activo">
                 <mat-icon class="!text-blue-600 dark:!text-blue-300">edit</mat-icon>
               </button>
-              <button mat-icon-button color="warn" (click)="openDeleteDialog(materia)" *ngIf="materia.activo">
+              <button mat-icon-button color="warn" (click)="openDeleteDialog(asignacion)" *ngIf="asignacion.activo">
                 <mat-icon>block</mat-icon>
               </button>
-              <button *ngIf="!activos" mat-icon-button color="primary" (click)="reactivarMateria(materia)">
+              <button *ngIf="!activos" mat-icon-button color="primary" (click)="reactivarAsignacion(asignacion)">
                 <mat-icon class="!text-green-600 dark:!text-green-300">refresh</mat-icon>
               </button>
             </td>
           </tr>
-          <tr *ngIf="materias.length === 0">
-            <td colspan="4" class="py-6 text-center text-gray-400 dark:text-gray-300">No hay materias registradas.</td>
+          <tr *ngIf="asignaciones.length === 0">
+            <td colspan="6" class="py-6 text-center text-gray-400 dark:text-gray-300">No hay asignaciones registradas.</td>
           </tr>
         </tbody>
       </table>
+      <mat-paginator [length]="total" [pageSize]="pageSize" [pageIndex]="page-1" [pageSizeOptions]="[5, 10, 20, 50]" (page)="onPageChange($event)"
+        class="!mt-6 !rounded-lg !bg-white dark:!bg-[#232a3a] !shadow !border !border-blue-100 dark:!border-blue-900 !px-4 !py-2 text-blue-900 dark:text-blue-100">
+      </mat-paginator>
     </div>
-    <mat-paginator [length]="total" [pageSize]="pageSize" [pageIndex]="page-1" [pageSizeOptions]="[5, 10, 20, 50]" (page)="onPageChange($event)"
-      class="!mt-6 !rounded-lg !bg-white dark:!bg-[#232a3a] !shadow !border !border-blue-100 dark:!border-blue-900 !px-4 !py-2 text-blue-900 dark:text-blue-100">
-    </mat-paginator>
   </div>
 </div>
-<!-- Aquí irán los formularios de agregar/editar y el modal de confirmación de borrado -->

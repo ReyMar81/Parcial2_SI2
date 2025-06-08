@@ -1,6 +1,8 @@
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 User = get_user_model()
 class PrivilegioSerializer(serializers.ModelSerializer):
@@ -25,3 +27,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'roles']
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        # Solo verifica que el usuario esté activo
+        if not user.is_active:
+            raise AuthenticationFailed('Usuario desactivado.')
+        return data

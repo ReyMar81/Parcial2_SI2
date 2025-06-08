@@ -6,6 +6,7 @@ from apps.personas.services import crear_usuario_persona_rol
 # --- PersonaSerializer ---
 class PersonaSerializer(serializers.ModelSerializer):
     usuario = serializers.PrimaryKeyRelatedField(read_only=True)
+    activo = serializers.BooleanField(required=False) 
 
     class Meta:
         model = Persona
@@ -35,10 +36,11 @@ class PersonaSerializer(serializers.ModelSerializer):
 # --- AlumnoSerializer ---
 class AlumnoSerializer(WritableNestedModelSerializer):
     persona = PersonaSerializer()
+    activo = serializers.BooleanField(required=False)
 
     class Meta:
         model = Alumno
-        fields = ['id', 'persona', 'registro']
+        fields = ['id', 'persona', 'registro', 'activo']
 
     def create(self, validated_data):
         persona_data = validated_data.pop('persona')
@@ -48,10 +50,11 @@ class AlumnoSerializer(WritableNestedModelSerializer):
 class MaestroSerializer(WritableNestedModelSerializer):
     persona = PersonaSerializer()
     registro = serializers.CharField(read_only=True)
+    activo = serializers.BooleanField(required=False)
 
     class Meta:
         model = Maestro
-        fields = ['id', 'persona', 'registro', 'especialidad']
+        fields = ['id', 'persona', 'registro', 'especialidad', 'activo']
 
     def create(self, validated_data):
         persona_data = validated_data.pop('persona')
@@ -61,17 +64,23 @@ class MaestroSerializer(WritableNestedModelSerializer):
 # --- TutorSerializer ---
 class TutorSerializer(WritableNestedModelSerializer):
     persona = PersonaSerializer()
+    alumnos_asociados = serializers.SerializerMethodField()
+    activo = serializers.BooleanField(required=False)
 
     class Meta:
         model = Tutor
-        fields = ['id', 'persona', 'ocupacion']
+        fields = ['id', 'persona', 'ocupacion', 'alumnos_asociados', 'activo']
+
+    def get_alumnos_asociados(self, obj):
+        # Solo relaciones activas
+        return [AlumnoSerializer(ta.alumno).data for ta in obj.alumnos_asociados.filter(activo=True)]
 
     def create(self, validated_data):
         persona_data = validated_data.pop('persona')
         ocupacion = validated_data.get('ocupacion')
         return crear_usuario_persona_rol(persona_data, rol='tutor', ocupacion=ocupacion)
 
-# --- Serializer simple sin modelo (solo para validación de datos de inscripción, etc) ---
+# --- Serializer simple sin modelo (solo para validación de datos de inscripción) ---
 class TutorPersonaSerializer(serializers.Serializer):
     nombre = serializers.CharField()
     apellido_paterno = serializers.CharField()
@@ -96,3 +105,7 @@ class InscripcionSerializer(serializers.Serializer):
     tipo_relacion = serializers.CharField()
     seccion_id = serializers.IntegerField(write_only=True)
     ciclo = serializers.CharField()
+
+# --- Serializer simple para actualizar alumnos de un tutor ---
+class ActualizarAlumnosTutorSerializer(serializers.Serializer):
+    alumnos_ids = serializers.ListField(child=serializers.IntegerField(), required=True)

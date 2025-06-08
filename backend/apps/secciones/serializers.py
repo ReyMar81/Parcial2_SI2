@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.secciones.models import Grado, Seccion, SeccionAlumno, ResultadoFinalSeccion
+from apps.secciones.models import Grado, Seccion, SeccionGrado, SeccionAlumno, ResultadoFinalSeccion
 from apps.materias.models import MateriaAsignada, ResultadoFinalMateria
 
 class GradoSerializer(serializers.ModelSerializer):
@@ -12,17 +12,32 @@ class SeccionSerializer(serializers.ModelSerializer):
         model = Seccion
         fields = '__all__'
 
+class SeccionGradoSerializer(serializers.ModelSerializer):
+    seccion_nombre = serializers.CharField(source='seccion.nombre', read_only=True)
+    grado_nombre = serializers.CharField(source='grado.nombre', read_only=True)
+    grado_id = serializers.PrimaryKeyRelatedField(queryset=Grado.objects.all(), source='grado', write_only=True)
+    seccion_id = serializers.PrimaryKeyRelatedField(queryset=Seccion.objects.all(), source='seccion', write_only=True)
+
+    class Meta:
+        model = SeccionGrado
+        fields = ['id', 'aula', 'capacidad_maxima', 'activo', 'seccion_id', 'grado_id', 'seccion_nombre', 'grado_nombre']
+
 class SeccionAlumnoSerializer(serializers.ModelSerializer):
+    seccion_grado_nombre = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = SeccionAlumno
         fields = '__all__'
+        extra_fields = ['seccion_grado_nombre']
+
+    def get_seccion_grado_nombre(self, obj):
+        return f"{obj.seccion_grado.grado.nombre} - {obj.seccion_grado.seccion.nombre} ({obj.seccion_grado.aula})"
 
     def validate(self, data):
         alumno = data['alumno']
         ciclo = data['ciclo']
-        seccion = data['seccion']
+        seccion_grado = data['seccion_grado']
 
-        # Verificar que no exista ya inscripción activa para este alumno, ciclo y sección
         existe = SeccionAlumno.objects.filter(
             alumno=alumno,
             ciclo=ciclo,
@@ -33,9 +48,8 @@ class SeccionAlumnoSerializer(serializers.ModelSerializer):
                 'Este alumno ya está inscrito activamente en una sección para este ciclo escolar.'
             )
 
-        # Validación de capacidad máxima de la sección
-        inscritos = SeccionAlumno.objects.filter(seccion=seccion, ciclo=ciclo, estado='activo').count()
-        if inscritos >= seccion.capacidad_maxima:
+        inscritos = SeccionAlumno.objects.filter(seccion_grado=seccion_grado, ciclo=ciclo, estado='activo').count()
+        if inscritos >= seccion_grado.capacidad_maxima:
             raise serializers.ValidationError('La sección ya está llena.')
 
         # --- Validación de aprobación del ciclo anterior ---

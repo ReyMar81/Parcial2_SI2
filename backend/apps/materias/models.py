@@ -1,10 +1,11 @@
 from django.db import models
 from apps.personas.models import Maestro
-from apps.secciones.models import Seccion
+from apps.secciones.models import SeccionGrado
 
 class Materia(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True, null=True)
+    activo = models.BooleanField(default=True)  # Nuevo campo para desactivación lógica
 
     def __str__(self):
         return self.nombre
@@ -13,11 +14,11 @@ class MateriaAsignada(models.Model):
     ciclo = models.CharField(max_length=50)
     horas_semanales = models.PositiveIntegerField()
     maestro = models.ForeignKey(Maestro, on_delete=models.CASCADE, related_name='materias_asignadas')
-    seccion = models.ForeignKey('secciones.Seccion', on_delete=models.CASCADE, related_name='materias_asignadas')
+    seccion_grado = models.ForeignKey('secciones.SeccionGrado', on_delete=models.CASCADE, related_name='materias_asignadas')
     materia = models.ForeignKey(Materia, on_delete=models.CASCADE, related_name='asignaciones')
 
     def __str__(self):
-        return f"{self.materia} - {self.seccion} ({self.ciclo})"
+        return f"{self.materia} - {self.seccion_grado} ({self.ciclo})"
 
 class TipoNota(models.Model):
     materia_asignada = models.ForeignKey('materias.MateriaAsignada', on_delete=models.CASCADE, related_name='tipos_nota')

@@ -64,8 +64,25 @@
             </div>
           </div>
         </div>
-        <!-- Datos del Tutor -->
-        <div>
+        <!-- Switch para tutor existente o nuevo -->
+        <div class="flex items-center gap-4 mb-2">
+          <mat-slide-toggle color="primary" [checked]="usarTutorExistente" (change)="onToggleTutorExistente()" name="usarTutorExistente">
+            Usar tutor ya registrado
+          </mat-slide-toggle>
+        </div>
+
+        <!-- Si se usa tutor existente, pedir solo CI -->
+        <div *ngIf="usarTutorExistente" class="mb-4">
+          <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">CI del Tutor Existente <span class="text-red-500">*</span></label>
+          <input matInput formControlName="tutor_existente_ci" placeholder="Carnet de Identidad del Tutor"
+            class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
+          <div *ngIf="form.get('tutor_existente_ci')?.invalid && (form.get('tutor_existente_ci')?.dirty || form.get('tutor_existente_ci')?.touched)" class="text-red-500 text-xs mt-1">
+            Debe ingresar el CI del tutor existente
+          </div>
+        </div>
+
+        <!-- Datos del Tutor (solo si NO se usa tutor existente) -->
+        <div *ngIf="!usarTutorExistente">
           <h3 class="text-xl font-bold text-blue-700 dark:text-blue-300 mb-3">Datos del Tutor</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -128,10 +145,10 @@
               class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100" />
           </div>
           <div>
-            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Sección <span class="text-red-500">*</span></label>
-            <mat-select formControlName="seccion_id"
+            <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Sección-Grupo <span class="text-red-500">*</span></label>
+            <mat-select formControlName="seccion_grado_id"
               class="w-full rounded-lg bg-blue-50 dark:bg-[#232531] focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] text-blue-900 dark:text-blue-100">
-              <mat-option *ngFor="let seccion of secciones" [value]="seccion.id">{{ seccion.nombre }}</mat-option>
+              <mat-option *ngFor="let sg of seccionGrados" [value]="sg.id">{{ sg.nombre }}</mat-option>
             </mat-select>
           </div>
           <div>

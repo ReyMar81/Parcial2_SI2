@@ -1,36 +1,50 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthService, MaestroResponse } from '../../auth.service';
-import { MaestroFormDialogComponent } from './maestro-form-dialog.component';
-import { DeleteMaestroConfirmDialogComponent } from './delete-confirm-dialog.component';
+import { AuthService, AlumnoResponse } from '../../auth.service';
+import { AlumnoFormDialogComponent } from './alumnos-form-dialog.component';
+import { DeleteAlumnoConfirmDialogComponent } from './delete-confirm-dialog.component';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { CommonModule } from '@angular/common';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MaestroCredencialesDialogComponent } from './maestro-credenciales-dialog.component';
-
+import { PageEvent } from '@angular/material/paginator';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule } from '@angular/material/paginator';
 
 @Component({
-  selector: 'app-maestros',
+  selector: 'app-alumnos',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
     MatDialogModule,
     MatIconModule,
     MatButtonModule,
-    MaestroFormDialogComponent,
-    DeleteMaestroConfirmDialogComponent,
+    MatButtonToggleModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatPaginatorModule,
+    AlumnoFormDialogComponent,
+    DeleteAlumnoConfirmDialogComponent,
     MatDatepickerModule,
-    MatNativeDateModule,
-    MaestroCredencialesDialogComponent
+    MatNativeDateModule
   ],
-  templateUrl: './maestros.component.html',
-  styleUrls: ['./maestros.component.css']
+  templateUrl: './alumnos.component.html',
+  styleUrls: ['./alumnos.component.css']
 })
-export class MaestrosComponent implements OnInit {
-  maestros: MaestroResponse[] = [];
+export class AlumnosComponent implements OnInit {
+  alumnos: AlumnoResponse[] = [];
   alert: { type: string, message: string } | null = null;
+  activos = true;
+  search = '';
+  page = 1;
+  pageSize = 10;
+  total = 0;
 
   constructor(
     private authService: AuthService,
@@ -38,57 +52,81 @@ export class MaestrosComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadMaestros();
+    this.loadAlumnos();
   }
 
-  loadMaestros() {
-    this.authService.getMaestros().subscribe({
-      next: (data: MaestroResponse[]) => this.maestros = data,
-      error: () => this.showAlert('error', 'Error al cargar maestros.')
+  loadAlumnos() {
+    const params: any = {
+      activo: this.activos,
+      page: this.page,
+      page_size: this.pageSize
+    };
+    if (this.search) params.search = this.search;
+    this.authService.getAlumnosPaginated(params).subscribe({
+      next: (resp: any) => {
+        this.alumnos = resp.results;
+        this.total = resp.count;
+      },
+      error: () => this.showAlert('error', 'Error al cargar alumnos.')
     });
   }
 
-  openAddMaestro() {
-    const dialogRef = this.dialog.open(MaestroFormDialogComponent, {
+  onToggleActivos(activos: boolean) {
+    this.activos = activos;
+    this.page = 1;
+    this.loadAlumnos();
+  }
+
+  onSearchChange(value: string) {
+    this.search = value;
+    this.page = 1;
+    this.loadAlumnos();
+  }
+
+  onPageChange(event: PageEvent) {
+    this.page = event.pageIndex + 1;
+    this.pageSize = event.pageSize;
+    this.loadAlumnos();
+  }
+
+  openEditAlumno(alumno: AlumnoResponse) {
+    const dialogRef = this.dialog.open(AlumnoFormDialogComponent, {
       width: '500px',
-      data: { isEdit: false }
+      data: { alumno, isEdit: true }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.showAlert('success', 'Maestro agregado exitosamente.');
-        this.loadMaestros();
+        this.showAlert('success', 'Alumno editado exitosamente.');
+        this.loadAlumnos();
       }
     });
   }
 
-  openEditMaestro(maestro: MaestroResponse) {
-    const dialogRef = this.dialog.open(MaestroFormDialogComponent, {
-      width: '500px',
-      data: { maestro, isEdit: true }
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.showAlert('success', 'Maestro editado exitosamente.');
-        this.loadMaestros();
-      }
-    });
-  }
-
-  openDeleteDialog(maestro: MaestroResponse) {
-    const dialogRef = this.dialog.open(DeleteMaestroConfirmDialogComponent, {
+  openDeactivateDialog(alumno: AlumnoResponse) {
+    const dialogRef = this.dialog.open(DeleteAlumnoConfirmDialogComponent, {
       width: '350px',
-      data: { nombre: maestro.persona.nombre + ' ' + maestro.persona.apellido_paterno }
+      data: { nombre: alumno.persona.nombre + ' ' + alumno.persona.apellido_paterno, desactivar: true }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.authService.deleteMaestro(maestro.id!).subscribe({
+        this.authService.deleteAlumno(alumno.id!).subscribe({
           next: () => {
-            this.showAlert('success', 'Maestro eliminado.');
-            this.loadMaestros();
+            this.showAlert('success', 'Alumno desactivado correctamente.');
+            this.loadAlumnos();
           },
-          error: () => this.showAlert('error', 'No se pudo eliminar el maestro.')
+          error: () => this.showAlert('error', 'No se pudo desactivar el alumno.')
         });
       }
+    });
+  }
+
+  reactivarAlumno(alumno: AlumnoResponse) {
+    this.authService.reactivarAlumno(alumno.id!).subscribe({
+      next: () => {
+        this.showAlert('success', 'Alumno reactivado correctamente.');
+        this.loadAlumnos();
+      },
+      error: () => this.showAlert('error', 'No se pudo reactivar el alumno.')
     });
   }
 

@@ -1,8 +1,8 @@
 from rest_framework import viewsets
 from drf_spectacular.utils import extend_schema
 from apps.personas.models import Persona, Alumno, Maestro, Tutor, TutorAlumno
-from apps.personas.serializers import PersonaSerializer, AlumnoSerializer, MaestroSerializer, TutorSerializer, TutorAlumnoSerializer, InscripcionSerializer
-from rest_framework.decorators import api_view, permission_classes
+from apps.personas.serializers import PersonaSerializer, AlumnoSerializer, MaestroSerializer, TutorSerializer, TutorAlumnoSerializer, InscripcionSerializer, ActualizarAlumnosTutorSerializer
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.personas.services import crear_usuario_persona_rol
 from rest_framework.response import Response
@@ -10,54 +10,187 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from apps.secciones.models import Seccion, SeccionAlumno
 from datetime import date
+from rest_framework import serializers
 
 class PersonaViewSet(viewsets.ModelViewSet):
-    queryset = Persona.objects.all()
     serializer_class = PersonaSerializer
+    def get_queryset(self):
+        return Persona.objects.filter(activo=True)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.activo = False
+        instance.save()
+        if instance.usuario:
+            instance.usuario.is_active = False
+            instance.usuario.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class AlumnoViewSet(viewsets.ModelViewSet):
-    queryset = Alumno.objects.all()
     serializer_class = AlumnoSerializer
+    search_fields = ['persona__nombre', 'persona__apellido_paterno', 'persona__apellido_materno', 'persona__ci', 'registro']
+    ordering_fields = ['persona__nombre', 'registro']
+    def get_queryset(self):
+        qs = Alumno.objects.all()
+        if getattr(self, 'action', None) == 'list':
+            activo = self.request.query_params.get('activo')
+            if activo is not None:
+                qs = qs.filter(activo=(activo.lower() == 'true'))
+            else:
+                qs = qs.filter(activo=True)
+        return qs
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.activo = False
+        instance.save()
+        # Desactivar la persona asociada
+        if instance.persona:
+            instance.persona.activo = False
+            instance.persona.save()
+            # Desactivar el usuario asociado
+            if instance.persona.usuario:
+                instance.persona.usuario.is_active = False
+                instance.persona.usuario.save()
+        # Desactivar relaciones TutorAlumno
+        TutorAlumno.objects.filter(alumno=instance, activo=True).update(activo=False)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    @action(detail=True, methods=['post'], url_path='reactivar')
+    def reactivar(self, request, pk=None):
+        alumno = self.get_object()
+        alumno.activo = True
+        alumno.save()
+        if alumno.persona:
+            alumno.persona.activo = True
+            alumno.persona.save()
+            if alumno.persona.usuario:
+                alumno.persona.usuario.is_active = True
+                alumno.persona.usuario.save()
+        # Reactivar relaciones TutorAlumno si el tutor está activo
+        from apps.personas.models import TutorAlumno
+        TutorAlumno.objects.filter(alumno=alumno, activo=False, tutor__activo=True).update(activo=True)
+        return Response({'mensaje': 'Alumno reactivado correctamente'})
 
 class MaestroViewSet(viewsets.ModelViewSet):
-    queryset = Maestro.objects.all()
     serializer_class = MaestroSerializer
-
+    search_fields = ['persona__nombre', 'persona__apellido_paterno', 'persona__apellido_materno', 'persona__ci', 'registro']
+    ordering_fields = ['persona__nombre', 'registro']
+    def get_queryset(self):
+        qs = Maestro.objects.all()
+        if getattr(self, 'action', None) == 'list':
+            activo = self.request.query_params.get('activo')
+            if activo is not None:
+                qs = qs.filter(activo=(activo.lower() == 'true'))
+            else:
+                qs = qs.filter(activo=True)
+        return qs
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.activo = False
+        instance.save()
+        if instance.persona:
+            instance.persona.activo = False
+            instance.persona.save()
+            if instance.persona.usuario:
+                instance.persona.usuario.is_active = False
+                instance.persona.usuario.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # Crear el maestro y obtener la instancia
         maestro = serializer.save()
-        headers = self.get_success_headers(serializer.data)
-        # Responder con credenciales como en inscripcion
+        # Custom response with credentials
         resp = {
-            "mensaje": "Registro de maestro exitoso",
+            "mensaje": "Maestro registrado exitosamente",
             "maestro": {
                 "registro": maestro.registro,
                 "username": maestro.persona.usuario.username,
                 "password": maestro.persona.ci
             }
         }
-        return Response(resp, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(resp, status=status.HTTP_201_CREATED)
+    @action(detail=True, methods=['post'], url_path='reactivar')
+    def reactivar(self, request, pk=None):
+        maestro = self.get_object()
+        maestro.activo = True
+        maestro.save()
+        if maestro.persona:
+            maestro.persona.activo = True
+            maestro.persona.save()
+            if maestro.persona.usuario:
+                maestro.persona.usuario.is_active = True
+                maestro.persona.usuario.save()
+        return Response({'mensaje': 'Maestro reactivado correctamente'})
 
 class TutorViewSet(viewsets.ModelViewSet):
-    queryset = Tutor.objects.all()
     serializer_class = TutorSerializer
-
+    search_fields = ['persona__nombre', 'persona__apellido_paterno', 'persona__apellido_materno', 'persona__ci']
+    ordering_fields = ['persona__nombre']
+    def get_queryset(self):
+        qs = Tutor.objects.all()
+        if getattr(self, 'action', None) == 'list':
+            activo = self.request.query_params.get('activo')
+            if activo is not None:
+                qs = qs.filter(activo=(activo.lower() == 'true'))
+            else:
+                qs = qs.filter(activo=True)
+        return qs
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.activo = False
+        instance.save()
+        if instance.persona:
+            instance.persona.activo = False
+            instance.persona.save()
+            if instance.persona.usuario:
+                instance.persona.usuario.is_active = False
+                instance.persona.usuario.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         tutor = serializer.save()
-        headers = self.get_success_headers(serializer.data)
+        # Custom response with credentials
         resp = {
-            "mensaje": "Registro de tutor exitoso",
+            "mensaje": "Tutor registrado exitosamente",
             "tutor": {
-                "registro": tutor.persona.usuario.username,  # O lo que uses de identificador
                 "username": tutor.persona.usuario.username,
-                "password": tutor.persona.ci  # Cambia esto si generas una contraseña diferente
+                "password": tutor.persona.ci
             }
         }
-        return Response(resp, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(resp, status=status.HTTP_201_CREATED)
+    @action(detail=True, methods=['post'], url_path='reactivar')
+    def reactivar(self, request, pk=None):
+        tutor = self.get_object()
+        tutor.activo = True
+        tutor.save()
+        if tutor.persona:
+            tutor.persona.activo = True
+            tutor.persona.save()
+            if tutor.persona.usuario:
+                tutor.persona.usuario.is_active = True
+                tutor.persona.usuario.save()
+        return Response({'mensaje': 'Tutor reactivado correctamente'})
+    @extend_schema(
+        request=ActualizarAlumnosTutorSerializer,
+        responses={200: serializers.Serializer()}
+    )
+    @action(detail=True, methods=['post'], url_path='actualizar_alumnos')
+    def actualizar_alumnos(self, request, pk=None):
+        """
+        Permite actualizar la lista de alumnos asociados a un tutor (agregar y quitar relaciones en lote).
+        Recibe: { alumnos_ids: [1,2,3] }
+        """
+        tutor = self.get_object()
+        alumnos_ids = request.data.get('alumnos_ids', [])
+        from apps.personas.models import Alumno, TutorAlumno
+        # Eliminar relaciones actuales no incluidas (desactivar en vez de borrar)
+        TutorAlumno.objects.filter(tutor=tutor).exclude(alumno_id__in=alumnos_ids).update(activo=False)
+        # Agregar nuevas relaciones o reactivar si ya existe
+        for alumno_id in alumnos_ids:
+            ta, created = TutorAlumno.objects.get_or_create(tutor=tutor, alumno_id=alumno_id)
+            if not ta.activo:
+                ta.activo = True
+                ta.save()
+        return Response({'mensaje': 'Alumnos asociados actualizados correctamente'})
 
 class TutorAlumnoViewSet(viewsets.ModelViewSet):
     queryset = TutorAlumno.objects.all()
@@ -72,43 +205,65 @@ class TutorAlumnoViewSet(viewsets.ModelViewSet):
 def inscripcion(request):
     alumno_data = request.data.get('alumno')
     tutor_data = request.data.get('tutor')
+    tutor_existente_ci = request.data.get('tutor_existente_ci')
     tipo_relacion = request.data.get('tipo_relacion', '')
-    seccion_id = request.data.get('seccion_id')
+    seccion_grado_id = request.data.get('seccion_grado_id')
     ciclo = request.data.get('ciclo')
 
     # Validaciones mínimas
-    if not alumno_data or not tutor_data or not seccion_id or not ciclo:
-        return Response({'error': 'Datos de alumno, tutor, sección y ciclo son requeridos'}, status=status.HTTP_400_BAD_REQUEST)
+    if not alumno_data or not seccion_grado_id or not ciclo:
+        return Response({'error': 'Datos de alumno, sección-grado y ciclo son requeridos'}, status=status.HTTP_400_BAD_REQUEST)
     
-    # No permitir inscripción duplicada por CI
-    from apps.personas.models import Persona
-    if Persona.objects.filter(ci=alumno_data['ci']).exists():
-        return Response({'error': 'Alumno ya inscrito (CI existente)'}, status=status.HTTP_400_BAD_REQUEST)
-    if Persona.objects.filter(ci=tutor_data['ci']).exists():
-        return Response({'error': 'El tutor ya tiene un usuario, use el endpoint para agregar un tutor existente'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    # Crear alumno y tutor
-    alumno_obj = crear_usuario_persona_rol(alumno_data, rol='alumno')
-    tutor_obj = crear_usuario_persona_rol(tutor_data, rol='tutor', ocupacion=tutor_data.get('ocupacion', ''))
+    from apps.personas.models import Persona, Tutor, TutorAlumno, Alumno
+    # Buscar o crear alumno por CI
+    alumno_persona = Persona.objects.filter(ci=alumno_data['ci']).first()
+    if alumno_persona:
+        # Si existe, debe ser un alumno
+        try:
+            alumno_obj = Alumno.objects.get(persona=alumno_persona)
+        except Alumno.DoesNotExist:
+            return Response({'error': 'El CI ya existe pero no corresponde a un alumno'}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        alumno_obj = crear_usuario_persona_rol(alumno_data, rol='alumno')
 
-    # Relacionar tutor con alumno
-    ta = TutorAlumno.objects.create(
+    # Lógica para tutor existente o nuevo
+    if tutor_existente_ci:
+        try:
+            tutor_obj = Tutor.objects.get(persona__ci=tutor_existente_ci)
+        except Tutor.DoesNotExist:
+            return Response({'error': 'El tutor con ese CI no existe'}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        if not tutor_data:
+            return Response({'error': 'Datos del tutor requeridos si no se usa tutor existente'}, status=status.HTTP_400_BAD_REQUEST)
+        # No permitir duplicado de tutor
+        if Persona.objects.filter(ci=tutor_data['ci']).exists():
+            return Response({'error': 'El tutor ya tiene un usuario, use el campo tutor_existente_ci'}, status=status.HTTP_400_BAD_REQUEST)
+        tutor_obj = crear_usuario_persona_rol(tutor_data, rol='tutor', ocupacion=tutor_data.get('ocupacion', ''))
+
+    # Relacionar tutor con alumno (sin duplicar relación activa)
+    ta, created = TutorAlumno.objects.get_or_create(
         tutor=tutor_obj,
         alumno=alumno_obj,
-        tipo_relacion=tipo_relacion
+        defaults={'tipo_relacion': tipo_relacion, 'activo': True}
     )
+    if not created and not ta.activo:
+        ta.activo = True
+        ta.tipo_relacion = tipo_relacion
+        ta.save()
 
-    # Crear inscripción en sección
-
+    # Crear inscripción en sección-grado solo si no está ya inscrito en ese ciclo/sección
+    from apps.secciones.models import SeccionGrado, SeccionAlumno
     try:
-        seccion = Seccion.objects.get(id=seccion_id)
-    except Seccion.DoesNotExist:
-        return Response({'error': 'La sección seleccionada no existe'}, status=status.HTTP_400_BAD_REQUEST)
+        seccion_grado = SeccionGrado.objects.get(id=seccion_grado_id)
+    except SeccionGrado.DoesNotExist:
+        return Response({'error': 'La sección-grado seleccionada no existe'}, status=status.HTTP_400_BAD_REQUEST)
+    if SeccionAlumno.objects.filter(alumno=alumno_obj, seccion_grado=seccion_grado, ciclo=ciclo, estado='activo').exists():
+        return Response({'error': 'El alumno ya está inscrito en esta sección y ciclo'}, status=status.HTTP_400_BAD_REQUEST)
     seccion_alumno = SeccionAlumno(
         fecha_inscripcion=date.today(),
         ciclo=ciclo,
         estado='activo',
-        seccion=seccion,
+        seccion_grado=seccion_grado,
         alumno=alumno_obj
     )
     # Validar con el serializer de SeccionAlumno
@@ -117,7 +272,7 @@ def inscripcion(request):
         'fecha_inscripcion': seccion_alumno.fecha_inscripcion,
         'ciclo': ciclo,
         'estado': 'activo',
-        'seccion': seccion.id,
+        'seccion_grado': seccion_grado.id,
         'alumno': alumno_obj.id
     })
     serializer.is_valid(raise_exception=True)

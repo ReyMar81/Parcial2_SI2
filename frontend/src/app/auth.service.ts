@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { map, catchError, tap } from 'rxjs/operators';
 
 // ---- Interfaces ----
 
@@ -11,6 +11,7 @@ export interface Materia {
   id?: number;
   nombre: string;
   descripcion: string;
+  activo: boolean; // <-- Agregado para reflejar el backend
 }
 
 // Grado
@@ -19,16 +20,14 @@ export interface Grado {
   nombre: string;
   nivel?: string;
   descripcion?: string;
+  activo: boolean; // <-- Agregado para reflejar el backend
 }
 
 // Seccion
 export interface Seccion {
   id?: number;
   nombre: string;
-  aula: string;
-  capacidad_maxima: number;
-  estado: 'activa' | 'cerrada';
-  grado: number | Grado;
+  activo: boolean;
 }
 
 // Maestro (Petición)
@@ -74,6 +73,46 @@ export interface PersonaResponse {
   fecha_nacimiento: string;
 }
 
+// Alumnos (Petición)
+export interface AlumnoCreate{
+  persona: {
+    id?: number;
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    genero: 'M' | 'F';
+    ci: string;
+    direccion: string;
+    contacto: string;
+    fecha_nacimiento: string;
+  };
+  registro: string;
+}
+export interface AlumnoResponse {
+  id: number;
+  persona: PersonaResponse;
+  registro: string;
+}
+
+// Alumnos (Respuesta)
+export interface AlumnoResponse {
+  id: number;
+  persona: PersonaResponse;
+  registro: string;
+}
+
+export interface PersonaResponse {
+  id: number;
+  usuario: number;
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  genero: string;
+  ci: string;
+  direccion: string;
+  contacto: string;
+  fecha_nacimiento: string;
+}
 // Perfil
 export interface PerfilResponse {
   id: number;
@@ -95,7 +134,7 @@ export interface InscripcionRequest {
     contacto: string;
     fecha_nacimiento: string;
   };
-  tutor: {
+  tutor?: {
     nombre: string;
     apellido_paterno: string;
     apellido_materno: string;
@@ -106,8 +145,9 @@ export interface InscripcionRequest {
     fecha_nacimiento: string;
     ocupacion: string;
   };
+  tutor_existente_ci?: string;
   tipo_relacion: string;
-  seccion_id: number;
+  seccion_grado_id: number;
   ciclo: string;
 }
 
@@ -120,6 +160,61 @@ export interface InscripcionResponse {
   mensaje: string;
   alumno: InscripcionUsuarioResponse;
   tutor: InscripcionUsuarioResponse;
+}
+
+// Tutor (Petición)
+export interface TutorCreate {
+  persona: {
+    id?: number;
+    nombre: string;
+    apellido_paterno: string;
+    apellido_materno: string;
+    genero: 'M' | 'F';
+    ci: string;
+    direccion: string;
+    contacto: string;
+    fecha_nacimiento: string;
+  };
+  ocupacion: string;
+  alumno_id?: number; // Permitir asociar alumno existente al crear tutor
+}
+export interface TutorCreateResponse {
+  mensaje: string;
+  tutor: {
+    username: string;
+    password: string;
+  };
+}
+// Tutor (Respuesta)
+export interface TutorResponse {
+  id: number;
+  persona: PersonaResponse;
+  ocupacion: string;
+  alumnos_asociados?: AlumnoResponse[];
+  registro?: string;
+}
+
+// SeccionGrado (Asignaciones)
+export interface SeccionGrado {
+  id?: number;
+  aula: string;
+  capacidad_maxima: number;
+  activo: boolean;
+  seccion_id: number;
+  grado_id: number;
+  seccion_nombre?: string;
+  grado_nombre?: string;
+  nombre?: string;
+}
+
+// MateriaAsignada (Asignación de Materias)
+export interface MateriaAsignada {
+  id?: number;
+  ciclo: string;
+  materia: number | { id: number; nombre: string };
+  maestro: number | { id: number; nombre: string };
+  seccion_grado: number | { id: number; nombre: string };
+  horas_semanales: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -136,6 +231,10 @@ export class AuthService {
   private gradosUrl = `${this.API_BASE}/api/secciones/grados/`;
   private seccionesUrl = `${this.API_BASE}/api/secciones/secciones/`;
   private maestroUrl = `${this.API_BASE}/api/personas/maestros/`;
+  private AlumnoUrl = `${this.API_BASE}/api/personas/alumnos/`;
+  private tutorUrl = `${this.API_BASE}/api/personas/tutores/`;
+  private seccionGradoUrl = `${this.API_BASE}/api/secciones/secciones-grado/`;
+  private materiaAsignadaUrl = `${this.API_BASE}/api/materias/materias-asignadas/`;
 
   // --- Auth & Perfil ---
   login(username: string, password: string): Observable<any> {
@@ -209,8 +308,13 @@ export class AuthService {
   }
 
   // --- Grados CRUD ---
-  getGrados(): Observable<Grado[]> {
-    return this.http.get<Grado[]>(this.gradosUrl).pipe(
+  getGrados(activo?: boolean): Observable<Grado[]> {
+    let params = {};
+    if (typeof activo === 'boolean') {
+      params = { activo };
+    }
+    return this.http.get<any>(this.gradosUrl, { params }).pipe(
+      map((resp: any) => Array.isArray(resp) ? resp : (resp.results ?? [])),
       catchError(this.handleError)
     );
   }
@@ -234,20 +338,28 @@ export class AuthService {
   }
 
   // --- Secciones CRUD ---
-  getSecciones(): Observable<Seccion[]> {
-    return this.http.get<Seccion[]>(this.seccionesUrl).pipe(
+  getSecciones(activo?: boolean): Observable<Seccion[]> {
+    let params = {};
+    if (typeof activo === 'boolean') {
+      params = { activo };
+    }
+    return this.http.get<Seccion[]>(this.seccionesUrl, { params }).pipe(
       catchError(this.handleError)
     );
   }
 
   addSeccion(seccion: Partial<Seccion>): Observable<Seccion> {
-    return this.http.post<Seccion>(this.seccionesUrl, seccion).pipe(
+    // Solo envía el nombre
+    const payload = { nombre: seccion.nombre };
+    return this.http.post<Seccion>(this.seccionesUrl, payload).pipe(
       catchError(this.handleError)
     );
   }
 
   updateSeccion(id: number, seccion: Partial<Seccion>): Observable<Seccion> {
-    return this.http.put<Seccion>(`${this.seccionesUrl}${id}/`, seccion).pipe(
+    // Solo envía el nombre
+    const payload = { nombre: seccion.nombre };
+    return this.http.put<Seccion>(`${this.seccionesUrl}${id}/`, payload).pipe(
       catchError(this.handleError)
     );
   }
@@ -286,6 +398,262 @@ export class AuthService {
 
   deleteMaestro(id: number): Observable<any> {
     return this.http.delete<any>(`${this.maestroUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Maestros CRUD con paginación, búsqueda y reactivación ---
+  getMaestrosPaginated(params: any): Observable<any> {
+    return this.http.get<any>(this.maestroUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarMaestro(id: number): Observable<any> {
+    return this.http.post<any>(`${this.maestroUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+    // --- Alumnos CRUD ---
+  getAlumnos(activo?: boolean): Observable<AlumnoResponse[]> {
+    let params = {};
+    if (typeof activo === 'boolean') {
+      params = { activo };
+    }
+    return this.http.get<any>(this.AlumnoUrl, { params }).pipe(
+      map((resp: any) => Array.isArray(resp) ? resp : (resp.results ?? [])),
+      catchError(this.handleError)
+    );
+  }
+
+  updateAlumno(id: number, alumno: AlumnoCreate): Observable<AlumnoResponse> {
+    return this.http.put<AlumnoResponse>(`${this.AlumnoUrl}${id}/`, alumno).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteAlumno(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.AlumnoUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Alumnos CRUD con paginación, búsqueda y reactivación ---
+  getAlumnosPaginated(params: any): Observable<any> {
+    return this.http.get<any>(this.AlumnoUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarAlumno(id: number): Observable<any> {
+    return this.http.post<any>(`${this.AlumnoUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+  // --- Tutores CRUD con paginación, búsqueda y reactivación ---
+  getTutoresPaginated(params: any): Observable<any> {
+    return this.http.get<any>(this.tutorUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarTutor(id: number): Observable<any> {
+    return this.http.post<any>(`${this.tutorUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  asociarTutorAlumno(tutorId: number, alumnoId: number): Observable<any> {
+    // Endpoint personalizado para asociar tutor y alumno existente
+    return this.http.post<any>(`${this.tutorUrl}${tutorId}/asociar_alumno/`, { alumno_id: alumnoId }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  actualizarAlumnosTutor(tutorId: number, alumnos_ids: number[]): Observable<any> {
+    // Endpoint para actualizar la lista de alumnos asociados a un tutor
+    return this.http.post<any>(`${this.tutorUrl}${tutorId}/actualizar_alumnos/`, { alumnos_ids }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Tutores CRUD ---
+  addTutor(tutor: TutorCreate): Observable<TutorCreateResponse> {
+    return this.http.post<TutorCreateResponse>(this.tutorUrl, tutor).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateTutor(id: number, tutor: TutorCreate): Observable<TutorResponse> {
+    return this.http.put<TutorResponse>(`${this.tutorUrl}${id}/`, tutor).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteTutor(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.tutorUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Secciones CRUD con paginación, búsqueda y reactivación ---
+  getSeccionesPaginated(params: any): Observable<any> {
+    return this.http.get<any>(this.seccionesUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  desactivarSeccion(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.seccionesUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarSeccion(id: number): Observable<any> {
+    return this.http.post<any>(`${this.seccionesUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Grados CRUD con paginación, búsqueda y desactivación lógica ---
+  getGradosPaginated(params: any): Observable<any> {
+    return this.http.get<any>(this.gradosUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  desactivarGrado(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.gradosUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarGrado(id: number): Observable<any> {
+    return this.http.post<any>(`${this.gradosUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Materias CRUD con paginación, búsqueda y desactivación lógica ---
+  getMateriasPaginated(params: any): Observable<any> {
+    return this.http.get<any>(this.materiaUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  desactivarMateria(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.materiaUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarMateria(id: number): Observable<any> {
+    return this.http.post<any>(`${this.materiaUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- SeccionGrado (Asignaciones) CRUD ---
+  getSeccionGrados(params?: any): Observable<any> {
+    return this.http.get<any>(this.seccionGradoUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addSeccionGrado(data: Partial<SeccionGrado>): Observable<SeccionGrado> {
+    return this.http.post<SeccionGrado>(this.seccionGradoUrl, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateSeccionGrado(id: number, data: Partial<SeccionGrado>): Observable<SeccionGrado> {
+    return this.http.put<SeccionGrado>(`${this.seccionGradoUrl}${id}/`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  desactivarSeccionGrado(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.seccionGradoUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reactivarSeccionGrado(id: number): Observable<any> {
+    return this.http.post<any>(`${this.seccionGradoUrl}${id}/reactivar/`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- MateriaAsignada (Asignación de Materias) CRUD con paginación y búsqueda ---
+  getMateriasAsignadas(params?: any): Observable<any> {
+    return this.http.get<any>(this.materiaAsignadaUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addMateriaAsignada(data: any): Observable<MateriaAsignada> {
+    // data puede ser un objeto o un array (para batch)
+    if (Array.isArray(data)) {
+      // Si es batch, enviar múltiples peticiones y combinarlas
+      return new Observable<MateriaAsignada>((observer: any) => {
+        let completed = 0;
+        let results: MateriaAsignada[] = [];
+        data.forEach((item: any, idx: number) => {
+          const payload = {
+            ciclo: item.ciclo,
+            horas_semanales: item.horas_semanales,
+            materia_id: typeof item.materia === 'object' ? item.materia.id : item.materia,
+            maestro_id: typeof item.maestro === 'object' ? item.maestro.id : item.maestro,
+            seccion_grado_id: typeof item.seccion_grado === 'object' ? item.seccion_grado.id : (item.seccion_grado_id ?? item.seccion_grado_ids?.[0])
+          };
+          this.http.post<MateriaAsignada>(this.materiaAsignadaUrl, payload).pipe(
+            catchError(this.handleError)
+          ).subscribe({
+            next: (res: any) => {
+              results.push(res);
+              completed++;
+              if (completed === data.length) {
+                observer.next(results as any);
+                observer.complete();
+              }
+            },
+            error: (err: any) => {
+              observer.error(err);
+            }
+          });
+        });
+      });
+    } else {
+      // Individual
+      const payload = {
+        ciclo: data.ciclo,
+        horas_semanales: data.horas_semanales,
+        materia_id: typeof data.materia === 'object' ? data.materia.id : data.materia,
+        maestro_id: typeof data.maestro === 'object' ? data.maestro.id : data.maestro,
+        seccion_grado_id: typeof data.seccion_grado === 'object' ? data.seccion_grado.id : (data.seccion_grado_id ?? data.seccion_grado_ids?.[0])
+      };
+      return this.http.post<MateriaAsignada>(this.materiaAsignadaUrl, payload).pipe(
+        catchError(this.handleError)
+      );
+    }
+  }
+
+  updateMateriaAsignada(id: number, data: any): Observable<MateriaAsignada> {
+    const payload = {
+      ciclo: data.ciclo,
+      horas_semanales: data.horas_semanales,
+      materia_id: data.materia,
+      maestro_id: data.maestro,
+      seccion_grado_id: data.seccion_grado || data.seccion_grado_id || data.seccion_grado_ids?.[0]
+    };
+    return this.http.put<MateriaAsignada>(`${this.materiaAsignadaUrl}${id}/`, payload).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteMateriaAsignada(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.materiaAsignadaUrl}${id}/`).pipe(
       catchError(this.handleError)
     );
   }

@@ -1,5 +1,10 @@
 from rest_framework import serializers
 from apps.materias.models import Materia, MateriaAsignada, ResultadoFinalMateria, TipoNota
+from apps.secciones.models import SeccionGrado
+from apps.personas.serializers import MaestroSerializer
+from apps.materias.models import Materia
+from apps.personas.models import Maestro
+from apps.secciones.serializers import SeccionGradoSerializer
 
 class MateriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -7,9 +12,39 @@ class MateriaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class MateriaAsignadaSerializer(serializers.ModelSerializer):
+    materia_id = serializers.PrimaryKeyRelatedField(queryset=Materia.objects.all(), source='materia', write_only=True)
+    maestro_id = serializers.PrimaryKeyRelatedField(queryset=Maestro.objects.all(), source='maestro', write_only=True)
+    seccion_grado_id = serializers.PrimaryKeyRelatedField(queryset=SeccionGrado.objects.all(), source='seccion_grado', write_only=True)
+
+    materia = serializers.SerializerMethodField(read_only=True)
+    maestro = serializers.SerializerMethodField(read_only=True)
+    seccion_grado = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = MateriaAsignada
-        fields = '__all__'
+        fields = [
+            'id', 'ciclo', 'horas_semanales',
+            'materia_id', 'maestro_id', 'seccion_grado_id',
+            'materia', 'maestro', 'seccion_grado'
+        ]
+
+    def get_materia(self, obj):
+        return {'id': obj.materia.id, 'nombre': obj.materia.nombre} if obj.materia else None
+
+    def get_maestro(self, obj):
+        if obj.maestro and obj.maestro.persona:
+            nombre = obj.maestro.persona.nombre
+            ap = obj.maestro.persona.apellido_paterno
+            am = obj.maestro.persona.apellido_materno or ''
+            nombre_completo = f"{nombre} {ap} {am}".strip()
+            return {'id': obj.maestro.id, 'nombre': nombre_completo}
+        return None
+
+    def get_seccion_grado(self, obj):
+        if obj.seccion_grado:
+            nombre = f"{obj.seccion_grado.grado.nombre} - {obj.seccion_grado.seccion.nombre} ({obj.seccion_grado.aula})"
+            return {'id': obj.seccion_grado.id, 'nombre': nombre}
+        return None
 
 class TipoNotaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,24 +82,5 @@ class ResultadoFinalMateriaSerializer(serializers.ModelSerializer):
         if existe.exists():
             raise serializers.ValidationError(
                 'Ya existe un resultado final para este alumno, materia y ciclo escolar.'
-            )
-
-        # Cálculo del promedio ponderado
-        tipos_nota = TipoNota.objects.filter(materia_asignada=materia_asignada)
-        notas = Nota.objects.filter(alumno=alumno, materia_asignada=materia_asignada)
-        suma_ponderada = 0
-        suma_pesos = 0
-        for tipo in tipos_nota:
-            nota = notas.filter(tipo_nota=tipo).first()
-            if nota:
-                suma_ponderada += nota.calificacion * tipo.peso
-                suma_pesos += tipo.peso
-        if suma_pesos > 0:
-            promedio = suma_ponderada / suma_pesos
-            data['promedio'] = promedio
-            data['aprobado'] = promedio >= 51
-        else:
-            raise serializers.ValidationError(
-                'No hay notas suficientes para calcular el promedio final.'
             )
         return data

@@ -143,6 +143,12 @@
                 <span class="ml-2 sidebar-link-text">Gestión de Secciones</span>
               </a>
             </li>
+            <li>
+              <a [routerLink]="['/home/aulas/asignaciones']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>assignment</mat-icon>
+                <span class="ml-2 sidebar-link-text">Asignaciones</span>
+              </a>
+            </li>
           </ul>
           <!-- MatMenu para modo comprimido -->
           <mat-menu #aulasMenu="matMenu" yPosition="below" xPosition="after">
@@ -153,6 +159,10 @@
             <button mat-menu-item [routerLink]="['/home/aulas/secciones']">
               <mat-icon>view_list</mat-icon>
               <span>Gestión de Secciones</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/aulas/asignaciones']">
+              <mat-icon>assignment</mat-icon>
+              <span>Asignaciones</span>
             </button>
           </mat-menu>
         </li>

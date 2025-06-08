@@ -1,0 +1,23 @@
+<div class="md:col-span-2">
+  <label class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Alumnos asociados <span class="text-red-500">*</span></label>
+  <mat-form-field appearance="fill" class="w-full">
+    <mat-label>Buscar alumno</mat-label>
+    <input type="text" matInput [formControl]="alumnoSearchCtrl" [matAutocomplete]="auto" placeholder="Buscar por nombre o CI">
+    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addAlumno($event.option.value)">
+      <mat-option *ngFor="let alumno of filteredAlumnos | async" [value]="alumno">
+        {{ alumno.persona.nombre }} {{ alumno.persona.apellido_paterno }} {{ alumno.persona.apellido_materno }} ({{ alumno.persona.ci }})
+      </mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+  <div *ngIf="alumnosAsociados.length > 0" class="mt-2 bg-blue-50 dark:bg-blue-900 rounded-lg p-2">
+    <div class="text-xs text-gray-500 mb-1">Alumnos asociados:</div>
+    <div class="flex flex-wrap gap-2">
+      <span *ngFor="let alumno of alumnosAsociados" class="inline-flex items-center bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 rounded-full px-3 py-1">
+        {{ alumno.persona.nombre }} {{ alumno.persona.apellido_paterno }} {{ alumno.persona.apellido_materno }} ({{ alumno.persona.ci }})
+        <button type="button" (click)="removeAlumno(alumno)" class="ml-2 text-red-500 hover:text-red-700 focus:outline-none">
+          <mat-icon fontIcon="cancel" inline style="font-size:16px"></mat-icon>
+        </button>
+      </span>
+    </div>
+  </div>
+</div>

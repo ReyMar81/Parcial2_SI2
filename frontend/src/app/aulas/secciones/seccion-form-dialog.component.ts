@@ -44,52 +44,6 @@ import {Grado, Seccion } from '../../auth.service';
             El nombre es obligatorio
           </div>
         </div>
-        <div>
-          <label for="aula" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Nro de Aula<span class="text-red-500">*</span></label>
-          <input
-            id="aula"
-            matInput
-            formControlName="aula"
-            required
-            type="number"
-            min="1"
-            class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100"
-            placeholder="Número de aula"
-            autocomplete="off"
-          />
-        </div>
-        <div>
-          <label for="capacidad_maxima" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Capacidad Máxima<span class="text-red-500">*</span></label>
-          <input
-            id="capacidad_maxima"
-            matInput
-            formControlName="capacidad_maxima"
-            required
-            type="number"
-            min="1"
-            class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-blue-300 focus:bg-white dark:focus:bg-[#232531] transition text-blue-900 dark:text-blue-100"
-            placeholder="Capacidad máxima de alumnos"
-            autocomplete="off"
-          />
-        </div>
-        <div>
-          <label for="grado" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Grado<span class="text-red-500">*</span></label>
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-select id="grado" formControlName="grado" required>
-              <mat-option *ngFor="let grado of grados" [value]="grado.id">{{ grado.nombre }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="flex items-center gap-2">
-          <label for="estado" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Activo</label>
-          <input
-            id="estado"
-            type="checkbox"
-            [checked]="form.get('estado')?.value === 'activa'"
-            (change)="onEstadoChange($event)"
-            class="ml-2"
-          >
-        </div>
         <div class="flex gap-4 mt-2 w-full justify-center">
           <button mat-stroked-button color="primary" type="button" (click)="onCancel()" class="dark:text-blue-200">Cancelar</button>
           <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid" class="dark:text-blue-200">{{ data.seccion ? 'Guardar Cambios' : 'Agregar' }}</button>
@@ -101,38 +55,23 @@ import {Grado, Seccion } from '../../auth.service';
 })
 export class SeccionFormDialogComponent {
   form: FormGroup;
-  grados: Grado[];
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<SeccionFormDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { seccion?: Seccion, grados: Grado[] }
+    @Inject(MAT_DIALOG_DATA) public data: { seccion?: Seccion }
   ) {
-    this.grados = data.grados || [];
     this.form = this.fb.group({
-      nombre: [data.seccion?.nombre || '', Validators.required],
-      aula: [data.seccion?.aula ?? '', [Validators.required, Validators.min(1)]],
-      capacidad_maxima: [data.seccion?.capacidad_maxima || '', [Validators.required, Validators.min(1)]],
-      estado: [data.seccion?.estado ? (data.seccion.estado === 'activa' ? 'activa' : 'cerrada') : 'activa'],
-      grado: [data.seccion?.grado ? (typeof data.seccion.grado === 'object' ? data.seccion.grado.id : data.seccion.grado) : '', Validators.required]
+      nombre: [data.seccion?.nombre || '', Validators.required]
     });
   }
 
-  onEstadoChange(event: Event) {
-    const checked = (event.target as HTMLInputElement).checked;
-    this.form.get('estado')?.setValue(checked ? 'activa' : 'cerrada');
-  }
   onCancel() {
     this.dialogRef.close();
   }
-onSubmit() {
-  if (this.form.valid) {
-    // Normalizar por si acaso
-    let formValue = { ...this.form.value };
-    if (formValue.estado !== 'activa' && formValue.estado !== 'cerrada') {
-      formValue.estado = formValue.estado ? 'activa' : 'cerrada';
+  onSubmit() {
+    if (this.form.valid) {
+      this.dialogRef.close(this.form.value);
     }
-    this.dialogRef.close(formValue);
   }
-}
 
 }

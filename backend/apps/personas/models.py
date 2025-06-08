@@ -13,6 +13,7 @@ class Persona(models.Model):
     direccion = models.CharField(max_length=200)
     contacto = models.CharField(max_length=50, blank=True, null=True)
     fecha_nacimiento = models.DateField()
+    activo = models.BooleanField(default=True)  # Nuevo campo
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno}"
@@ -20,6 +21,7 @@ class Persona(models.Model):
 class Alumno(models.Model):
     persona = models.OneToOneField(Persona, on_delete=models.CASCADE, related_name='alumno')
     registro = models.CharField(max_length=50, unique=True)
+    activo = models.BooleanField(default=True)  # Nuevo campo
 
     def __str__(self):
         return str(self.persona)
@@ -28,6 +30,7 @@ class Maestro(models.Model):
     persona = models.OneToOneField(Persona, on_delete=models.CASCADE, related_name='maestro')
     especialidad = models.CharField(max_length=100)
     registro = models.CharField(max_length=50, unique=True)
+    activo = models.BooleanField(default=True)  # Nuevo campo
 
     def __str__(self):
         return str(self.persona)
@@ -35,6 +38,7 @@ class Maestro(models.Model):
 class Tutor(models.Model):
     persona = models.OneToOneField(Persona, on_delete=models.CASCADE, related_name='tutor')
     ocupacion = models.CharField(max_length=100)
+    activo = models.BooleanField(default=True)  # Nuevo campo
 
     def __str__(self):
         return str(self.persona)
@@ -43,7 +47,8 @@ class TutorAlumno(models.Model):
     tutor = models.ForeignKey('Tutor', on_delete=models.CASCADE, related_name='alumnos_asociados')
     alumno = models.ForeignKey('Alumno', on_delete=models.CASCADE, related_name='tutores_asociados')
     fecha_asignacion = models.DateField(auto_now_add=True)
-    tipo_relacion = models.CharField(max_length=50, blank=True, null=True) 
+    tipo_relacion = models.CharField(max_length=50, blank=True, null=True)
+    activo = models.BooleanField(default=True)  # Nuevo campo para desactivación lógica
 
     class Meta:
         unique_together = ('tutor', 'alumno')

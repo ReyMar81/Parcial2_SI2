@@ -35,6 +35,7 @@ export const routes: Routes = [
         children: [
           { path: 'grados', component: GradosCrudComponent },
           { path: 'secciones', component: SeccionesCrudComponent },
+          { path: 'asignaciones', loadComponent: () => import('./aulas/asignaciones/asignaciones.component').then(m => m.AsignacionesComponent) },
         ]
       },
       { path: 'inscripcion', loadComponent: () => import('./inscripcion/inscripcion.component').then(m => m.InscripcionFormComponent) },

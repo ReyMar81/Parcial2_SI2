@@ -4,14 +4,16 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AsignacionFormDialogComponent } from './asignacion-form-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { DeleteAsignacionConfirmDialogComponent } from './delete-asignacion-confirm-dialog.component';
+import { AuthService } from '../../auth.service';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { FormsModule } from '@angular/forms';
 
 export interface Asignacion {
   id: number;
   ciclo: string;
-  materia: string;
-  maestro: string;
-  seccion: string;
+  materia: { id: number; nombre: string };
+  maestro: { id: number; nombre: string };
+  seccion_grado: { id: number; nombre: string };
   horas_semanales: number;
 }
 
@@ -24,36 +26,55 @@ export interface Asignacion {
     AsignacionFormDialogComponent,
     MatIconModule,
     MatButtonModule,
-    DeleteAsignacionConfirmDialogComponent
+    MatPaginatorModule,
+    FormsModule
   ],
   templateUrl: './asignaciones-crud.component.html',
   styleUrls: ['./asignaciones-crud.component.css'],
 })
 export class AsignacionesCrudComponent {
-  asignaciones: Asignacion[] = [
-    {
-      id: 1,
-      ciclo: '2024-2025',
-      materia: 'Matemáticas',
-      maestro: 'Juan Pérez',
-      seccion: '5A',
-      horas_semanales: 5
-    },
-    {
-      id: 2,
-      ciclo: '2024-2025',
-      materia: 'Ciencias',
-      maestro: 'Ana Gómez',
-      seccion: '5B',
-      horas_semanales: 4
-    }
-  ];
-  nextId = 3;
+  asignaciones: Asignacion[] = [];
+  total = 0;
+  page = 1;
+  pageSize = 10;
+  search = '';
+  loading = false;
   alert: { type: 'success' | 'error' | 'warning', message: string } | null = null;
-  deleteDialogRef: any = null;
-  deleteTarget: Asignacion | null = null;
 
-  constructor(private dialog: MatDialog) {}
+  constructor(private dialog: MatDialog, private authService: AuthService) {}
+
+  ngOnInit() {
+    this.loadAsignaciones();
+  }
+
+  loadAsignaciones() {
+    this.loading = true;
+    const params: any = {
+      page: this.page,
+      page_size: this.pageSize
+    };
+    if (this.search) params.search = this.search;
+    this.authService.getMateriasAsignadas(params).subscribe({
+      next: (resp: any) => {
+        let asignacionesRaw = [];
+        let total = 0;
+        if (Array.isArray(resp)) {
+          asignacionesRaw = resp;
+          total = resp.length;
+        } else if (resp && Array.isArray(resp.results)) {
+          asignacionesRaw = resp.results;
+          total = resp.count;
+        }
+        this.asignaciones = asignacionesRaw;
+        this.total = total;
+        this.loading = false;
+      },
+      error: () => {
+        this.showAlert('error', 'Error al cargar asignaciones.');
+        this.loading = false;
+      }
+    });
+  }
 
   openAddAsignacion() {
     const dialogRef = this.dialog.open(AsignacionFormDialogComponent, {
@@ -62,8 +83,35 @@ export class AsignacionesCrudComponent {
     });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
-        this.asignaciones.push({ id: this.nextId++, ...result });
-        this.showAlert('success', 'Asignación agregada correctamente');
+        // Si es batch (array), enviar todas
+        if (Array.isArray(result)) {
+          this.loading = true;
+          this.authService.addMateriaAsignada(result).subscribe({
+            next: () => {
+              this.showAlert('success', 'Asignación(es) agregada(s) correctamente');
+              this.loadAsignaciones();
+              this.loading = false;
+            },
+            error: () => {
+              this.showAlert('error', 'Error al agregar asignación.');
+              this.loading = false;
+            }
+          });
+        } else {
+          // Individual
+          this.loading = true;
+          this.authService.addMateriaAsignada(result).subscribe({
+            next: () => {
+              this.showAlert('success', 'Asignación agregada correctamente');
+              this.loadAsignaciones();
+              this.loading = false;
+            },
+            error: () => {
+              this.showAlert('error', 'Error al agregar asignación.');
+              this.loading = false;
+            }
+          });
+        }
       }
     });
   }
@@ -75,37 +123,26 @@ export class AsignacionesCrudComponent {
     });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
-        Object.assign(asignacion, result);
         this.showAlert('success', 'Asignación editada correctamente');
+        this.loadAsignaciones();
       }
     });
-  }
-
-  openDeleteDialog(asignacion: Asignacion) {
-    this.deleteTarget = asignacion;
-    this.deleteDialogRef = this.dialog.open(DeleteAsignacionConfirmDialogComponent, {
-      width: '350px',
-      data: {
-        materia: asignacion.materia,
-        seccion: asignacion.seccion,
-        ciclo: asignacion.ciclo
-      }
-    });
-    this.deleteDialogRef.afterClosed().subscribe((result: boolean) => {
-      if (result) {
-        this.deleteAsignacion(asignacion);
-      }
-      this.deleteTarget = null;
-    });
-  }
-
-  deleteAsignacion(asignacion: Asignacion) {
-    this.asignaciones = this.asignaciones.filter(a => a.id !== asignacion.id);
-    this.showAlert('warning', 'Asignación eliminada');
   }
 
   showAlert(type: 'success' | 'error' | 'warning', message: string) {
     this.alert = { type, message };
     setTimeout(() => this.alert = null, 3000);
+  }
+
+  onSearchChange(value: string) {
+    this.search = value;
+    this.page = 1;
+    this.loadAsignaciones();
+  }
+
+  onPageChange(event: PageEvent) {
+    this.page = event.pageIndex + 1;
+    this.pageSize = event.pageSize;
+    this.loadAsignaciones();
   }
 }
