@@ -12,9 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatMenuModule } from '@angular/material/menu';
 import { TipoNotaDialogComponent, TipoNotaDialogData } from './tipo-nota-dialog.component';
-import { CellContextMenuComponent, CellContextMenuData } from './cell-context-menu.component';
-import { CdkDragDrop, moveItemInArray, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
-import { AuthService, MaestroResponse, MateriaAsignadaConAlumnos } from '../auth.service';
+import { AuthService, MaestroResponse, MateriaAsignadaConAlumnos } from '../../auth.service';
 
 interface Alumno {
   id: number;

@@ -35,6 +35,7 @@ export class HomeComponent implements OnInit {
   usuariosSubmenuOpen = false;
   materiasSubmenuOpen = false;
   aulasSubmenuOpen = false;
+  notasSubmenuOpen = false;
 
   ngOnInit() {
     if (!localStorage.getItem('access_token')) {
@@ -72,5 +73,11 @@ export class HomeComponent implements OnInit {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.username || payload.user || null;
     } catch { return null; }
+  }
+  toggleSubmenu(menu: 'usuarios' | 'materias' | 'aulas' | 'notas') {
+    this.usuariosSubmenuOpen = menu === 'usuarios' ? !this.usuariosSubmenuOpen : false;
+    this.materiasSubmenuOpen = menu === 'materias' ? !this.materiasSubmenuOpen : false;
+    this.aulasSubmenuOpen = menu === 'aulas' ? !this.aulasSubmenuOpen : false;
+    this.notasSubmenuOpen = menu === 'notas' ? !this.notasSubmenuOpen : false;
   }
 }

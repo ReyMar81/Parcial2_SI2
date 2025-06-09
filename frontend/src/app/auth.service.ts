@@ -217,7 +217,7 @@ export interface MateriaAsignada {
   horas_semanales: number;
 }
 
-// --- MateriaAsignada con alumnos (para vista de notas) ---
+// --- MateriaAsignada con alumnos ---
 export interface MateriaAsignadaConAlumnos {
   id: number;
   ciclo: string;
@@ -526,7 +526,7 @@ export class AuthService {
     );
   }
 
-  // --- Secciones CRUD con paginación, búsqueda y reactivación ---
+  // --- Secciones CRUD con paginación, búsqueda y desactivación lógica ---
   getSeccionesPaginated(params: any): Observable<any> {
     return this.http.get<any>(this.seccionesUrl, { params }).pipe(
       catchError(this.handleError)
@@ -729,6 +729,58 @@ export class AuthService {
   getNotasPorMateriaAsignada(materiaAsignadaId: number) {
     return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/notas/`, {
       params: { materia_asignada: materiaAsignadaId }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Registra o actualiza asistencias en masa (upsert por alumno, materia_asignada y fecha)
+   * @param asistencias Array de asistencias: { alumno, materia_asignada, fecha, estado }
+   */
+  bulkUpsertAsistencias(asistencias: any[]) {
+    return this.http.post<any[]>(
+      `${this.API_BASE}/api/evaluacion/asistencias/bulk/`,
+      asistencias
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene las asistencias de los alumnos para una materia_asignada y fecha específica
+   * @param materiaAsignadaId id de la materia_asignada
+   * @param fecha fecha en formato YYYY-MM-DD
+   */
+  getAsistenciasPorMateriaYFecha(materiaAsignadaId: number, fecha: string) {
+    return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/asistencias/por-materia-y-fecha/`, {
+      params: { materia_asignada: materiaAsignadaId, fecha }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Registra o actualiza participaciones en masa (upsert por alumno, materia_asignada y fecha)
+   * @param participaciones Array de participaciones: { alumno, materia_asignada, fecha, puntaje, observacion }
+   */
+  bulkUpsertParticipaciones(participaciones: any[]) {
+    return this.http.post<any[]>(
+      `${this.API_BASE}/api/evaluacion/participaciones/bulk/`,
+      participaciones
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene las participaciones de los alumnos para una materia_asignada y fecha específica
+   * @param materiaAsignadaId id de la materia_asignada
+   * @param fecha fecha en formato YYYY-MM-DD
+   */
+  getParticipacionesPorMateriaYFecha(materiaAsignadaId: number, fecha: string) {
+    return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/participaciones/por-materia-y-fecha/`, {
+      params: { materia_asignada: materiaAsignadaId, fecha }
     }).pipe(
       catchError(this.handleError)
     );

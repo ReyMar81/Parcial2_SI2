@@ -31,7 +31,7 @@
             <mat-icon>group</mat-icon>
           </div>
           <!-- Inline expandible cuando no está comprimido -->
-          <div *ngIf="!collapsed" (click)="usuariosSubmenuOpen = !usuariosSubmenuOpen" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+          <div *ngIf="!collapsed" (click)="toggleSubmenu('usuarios')" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
             <mat-icon>group</mat-icon>
             <span class="ml-4 sidebar-link-text flex-1">Gestión de Usuarios</span>
             <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': usuariosSubmenuOpen}">expand_more</mat-icon>
@@ -88,7 +88,7 @@
             <mat-icon>book</mat-icon>
           </div>
           <!-- Inline expandible cuando no está comprimido -->
-          <div *ngIf="!collapsed" (click)="materiasSubmenuOpen = !materiasSubmenuOpen" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+          <div *ngIf="!collapsed" (click)="toggleSubmenu('materias')" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
             <mat-icon>book</mat-icon>
             <span class="ml-4 sidebar-link-text flex-1">Gestión de Materias</span>
             <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': materiasSubmenuOpen}">expand_more</mat-icon>
@@ -125,7 +125,7 @@
             <mat-icon>apartment</mat-icon>
           </div>
           <!-- Inline expandible cuando no está comprimido -->
-          <div *ngIf="!collapsed" (click)="aulasSubmenuOpen = !aulasSubmenuOpen" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+          <div *ngIf="!collapsed" (click)="toggleSubmenu('aulas')" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
             <mat-icon>apartment</mat-icon>
             <span class="ml-4 sidebar-link-text flex-1">Gestión de Aulas</span>
             <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': aulasSubmenuOpen}">expand_more</mat-icon>
@@ -167,10 +167,51 @@
           </mat-menu>
         </li>
         <li>
-          <a [routerLink]="['/home/notas']" routerLinkActive="active-link" class="sidebar-item" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+          <!-- Botón para abrir menú flotante cuando está comprimido -->
+          <div *ngIf="collapsed" [matMenuTriggerFor]="notasMenu" class="sidebar-item cursor-pointer select-none flex items-center justify-center sidebar-item-collapsed" aria-label="Gestión de Notas">
             <mat-icon>grading</mat-icon>
-            <span *ngIf="!collapsed" class="ml-4 sidebar-link-text">Notas</span>
-          </a>
+          </div>
+          <!-- Inline expandible cuando no está comprimido -->
+          <div *ngIf="!collapsed" (click)="toggleSubmenu('notas')" class="sidebar-item cursor-pointer select-none flex items-center" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>grading</mat-icon>
+            <span class="ml-4 sidebar-link-text flex-1">Gestión de Notas</span>
+            <mat-icon class="ml-auto transition-transform" [ngClass]="{'rotate-90': notasSubmenuOpen}">expand_more</mat-icon>
+          </div>
+          <ul *ngIf="notasSubmenuOpen && !collapsed" class="ml-10 mt-1 space-y-1">
+            <li>
+              <a [routerLink]="['/home/notas']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>grading</mat-icon>
+                <span class="ml-2 sidebar-link-text">Notas</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/asistencias']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>event_available</mat-icon>
+                <span class="ml-2 sidebar-link-text">Asistencias</span>
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/home/participacion']" routerLinkActive="active-link" class="sidebar-item !py-2 !px-4 !text-sm">
+                <mat-icon>record_voice_over</mat-icon>
+                <span class="ml-2 sidebar-link-text">Participación</span>
+              </a>
+            </li>
+          </ul>
+          <!-- MatMenu para modo comprimido -->
+          <mat-menu #notasMenu="matMenu" yPosition="below" xPosition="after">
+            <button mat-menu-item [routerLink]="['/home/notas']">
+              <mat-icon>grading</mat-icon>
+              <span>Notas</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/asistencias']">
+              <mat-icon>event_available</mat-icon>
+              <span>Asistencias</span>
+            </button>
+            <button mat-menu-item [routerLink]="['/home/participacion']">
+              <mat-icon>record_voice_over</mat-icon>
+              <span>Participación</span>
+            </button>
+          </mat-menu>
         </li>
       </ul>
       <ul class="px-2 mt-2">

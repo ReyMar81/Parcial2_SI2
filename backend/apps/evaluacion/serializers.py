@@ -41,14 +41,8 @@ class AsistenciaSerializer(serializers.ModelSerializer):
         if estado not in ESTADOS_VALIDOS:
             raise serializers.ValidationError(f"Estado inválido. Opciones: {', '.join(ESTADOS_VALIDOS)}")
 
-        if Asistencia.objects.filter(
-            alumno=alumno,
-            materia_asignada=materia_asignada,
-            fecha=fecha
-        ).exists():
-            raise serializers.ValidationError('Ya se registró asistencia para este alumno y materia en esa fecha.')
-        
-        if materia_asignada.seccion not in [insc.seccion for insc in alumno.inscripciones.all()]:
+        # Validar inscripción (corregido: usar seccion_grado.seccion)
+        if materia_asignada.seccion_grado.seccion not in [insc.seccion_grado.seccion for insc in alumno.inscripciones.all()]:
             raise serializers.ValidationError('El alumno no está inscrito en la sección asignada a la materia.')
 
         return data
@@ -68,7 +62,7 @@ class ParticipacionSerializer(serializers.ModelSerializer):
         if not (0 <= puntaje <= 10):
             raise serializers.ValidationError('El puntaje debe estar entre 0 y 10.')
 
-        if materia_asignada.seccion not in [insc.seccion for insc in alumno.inscripciones.all()]:
+        if materia_asignada.seccion_grado.seccion not in [insc.seccion_grado.seccion for insc in alumno.inscripciones.all()]:
             raise serializers.ValidationError('El alumno no está inscrito en la sección asignada a la materia.')
         
         return data
