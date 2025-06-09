@@ -1,0 +1,68 @@
+<div class="w-full max-w-lg md:max-w-xl p-0 sm:p-6 flex flex-col gap-6 bg-white dark:bg-[#232a3a] rounded-2xl shadow-lg">
+  <div class="flex flex-col items-center mb-2">
+    <mat-icon class="text-5xl text-indigo-500 mb-2">{{ data.isEdit ? 'edit' : 'add_circle' }}</mat-icon>
+    <h2 class="text-2xl font-bold text-center text-indigo-800 dark:text-indigo-200">
+      {{ data.isEdit ? 'Editar tipo de nota' : 'Añadir tipo de nota' }}
+    </h2>
+  </div>
+  <form [formGroup]="form" (ngSubmit)="onSave()" class="flex flex-col gap-5">
+    <!-- Fila: Nombre -->
+    <div>
+      <label for="nombre" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Nombre<span class="text-red-500">*</span></label>
+      <input
+        id="nombre"
+        formControlName="nombre"
+        maxlength="30"
+        required
+        class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-indigo-300 focus:bg-white dark:focus:bg-[#232531] transition text-indigo-900 dark:text-indigo-100"
+        placeholder="Nombre del tipo de nota"
+        autocomplete="off"
+      />
+      <div *ngIf="form.get('nombre')?.invalid && (form.get('nombre')?.dirty || form.get('nombre')?.touched)" class="text-red-500 text-xs mt-1">
+        El nombre es obligatorio
+      </div>
+    </div>
+    <!-- Fila: Peso y Nivel en dos columnas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="peso" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Peso (%)<span class="text-red-500">*</span></label>
+        <input
+          id="peso"
+          type="number"
+          formControlName="peso"
+          min="0"
+          max="100"
+          required
+          class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-indigo-300 focus:bg-white dark:focus:bg-[#232531] transition text-indigo-900 dark:text-indigo-100"
+          placeholder="Peso en porcentaje"
+          autocomplete="off"
+        />
+        <div *ngIf="form.get('peso')?.invalid && (form.get('peso')?.dirty || form.get('peso')?.touched)" class="text-red-500 text-xs mt-1">
+          El peso es obligatorio y debe estar entre 0 y 100
+        </div>
+      </div>
+      <div>
+        <label for="nivel" class="block text-gray-700 dark:text-gray-200 font-medium mb-1">Nivel<span class="text-red-500">*</span></label>
+        <input
+          id="nivel"
+          type="number"
+          formControlName="nivel"
+          min="1"
+          required
+          class="w-full rounded-lg px-4 py-2 bg-blue-50 dark:bg-[#232531] border-none focus:ring-2 focus:ring-indigo-300 focus:bg-white dark:focus:bg-[#232531] transition text-indigo-900 dark:text-indigo-100"
+          placeholder="Nivel de orden"
+          autocomplete="off"
+        />
+        <div *ngIf="form.get('nivel')?.invalid && (form.get('nivel')?.dirty || form.get('nivel')?.touched)" class="text-red-500 text-xs mt-1">
+          El nivel es obligatorio y debe ser mayor o igual a 1
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-4 mt-2 w-full justify-center">
+      <button mat-stroked-button color="primary" type="button" (click)="onCancel()" class="dark:text-indigo-200">Cancelar</button>
+      <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid" class="dark:text-indigo-200">
+        {{ data.isEdit ? 'Guardar cambios' : 'Añadir' }}
+      </button>
+    </div>
+  </form>
+</div>

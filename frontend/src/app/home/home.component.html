@@ -166,6 +166,12 @@
             </button>
           </mat-menu>
         </li>
+        <li>
+          <a [routerLink]="['/home/notas']" routerLinkActive="active-link" class="sidebar-item" [class.justify-center]="collapsed" [class.sidebar-item-collapsed]="collapsed">
+            <mat-icon>grading</mat-icon>
+            <span *ngIf="!collapsed" class="ml-4 sidebar-link-text">Notas</span>
+          </a>
+        </li>
       </ul>
       <ul class="px-2 mt-2">
         <li>

@@ -6,6 +6,9 @@ from apps.materias.models import Materia, MateriaAsignada, ResultadoFinalMateria
 from apps.materias.serializers import MateriaSerializer, MateriaAsignadaSerializer, ResultadoFinalMateriaSerializer, TipoNotaSerializer
 from apps.evaluacion.models import Nota
 from django.utils import timezone
+from apps.secciones.models import SeccionAlumno
+from apps.personas.serializers import AlumnoSerializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 class MateriaViewSet(viewsets.ModelViewSet):
     serializer_class = MateriaSerializer
@@ -56,9 +59,66 @@ class MateriaAsignadaViewSet(viewsets.ModelViewSet):
             )
         return qs
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("maestro", OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="ID del maestro"),
+            OpenApiParameter("ciclo", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Ciclo escolar (opcional)")
+        ],
+        responses={200: dict},
+        description="Lista las materias asignadas a un maestro, incluyendo los alumnos de cada sección/grado y ciclo."
+    )
+    @action(detail=False, methods=["get"], url_path="por-maestro")
+    def materias_asignadas_por_maestro(self, request):
+        maestro_id = request.query_params.get("maestro")
+        ciclo = request.query_params.get("ciclo")
+        if not maestro_id:
+            return Response({"error": "Debe proporcionar el id del maestro"}, status=400)
+        qs = self.get_queryset().filter(maestro_id=maestro_id)
+        if ciclo:
+            qs = qs.filter(ciclo=ciclo)
+        result = []
+        for ma in qs:
+            # Buscar alumnos activos en la seccion_grado y ciclo
+            alumnos_qs = SeccionAlumno.objects.filter(
+                seccion_grado=ma.seccion_grado,
+                ciclo=ma.ciclo,
+                estado='activo'
+            )
+            alumnos = [AlumnoSerializer(sa.alumno).data for sa in alumnos_qs]
+            ma_data = self.get_serializer(ma).data
+            ma_data["alumnos"] = alumnos
+            result.append(ma_data)
+        return Response(result)
+
 class TipoNotaViewSet(viewsets.ModelViewSet):
     queryset = TipoNota.objects.all()
     serializer_class = TipoNotaSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="materia_asignada",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="ID de la materia_asignada para filtrar los tipos de nota"
+            )
+        ],
+        responses={200: TipoNotaSerializer(many=True)},
+        description="Devuelve los tipos de nota asociados a un id de materia_asignada."
+    )
+    @action(detail=False, methods=['get'], url_path='por-materia-asignada')
+    def por_materia_asignada(self, request):
+        """
+        Devuelve los tipos de nota asociados a un id de materia_asignada.
+        GET param: materia_asignada=<id>
+        """
+        materia_asignada_id = request.query_params.get('materia_asignada')
+        if not materia_asignada_id:
+            return Response({'error': 'Debe proporcionar el id de materia_asignada'}, status=400)
+        tipos = TipoNota.objects.filter(materia_asignada=materia_asignada_id)
+        data = self.get_serializer(tipos, many=True).data
+        return Response(data)
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)

@@ -16,16 +16,12 @@ class NotaSerializer(serializers.ModelSerializer):
         if not (0 <= calificacion <= 100):
             raise serializers.ValidationError('La calificación debe estar entre 0 y 100.')
 
-        # Solo una nota por alumno/tipo_nota
-        if Nota.objects.filter(alumno=alumno, tipo_nota=tipo_nota).exclude(pk=self.instance.pk if self.instance else None).exists():
-            raise serializers.ValidationError('Ya existe una nota para este alumno y tipo de nota.')
-
         # Validar que el tipo_nota pertenece a la misma materia_asignada
         if tipo_nota.materia_asignada != materia_asignada:
             raise serializers.ValidationError('El tipo de nota no corresponde a la materia asignada.')
 
         # Validar inscripción
-        if materia_asignada.seccion not in [insc.seccion for insc in alumno.inscripciones.all()]:
+        if materia_asignada.seccion_grado.seccion not in [insc.seccion_grado.seccion for insc in alumno.inscripciones.all()]:
             raise serializers.ValidationError('El alumno no está inscrito en la sección asignada a la materia.')
 
         return data

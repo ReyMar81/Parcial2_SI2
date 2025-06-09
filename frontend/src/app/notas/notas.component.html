@@ -1,0 +1,241 @@
+<div class="p-4">
+  <!-- Filtros de maestro y ciclo -->
+  <div class="flex flex-wrap items-center gap-4 mb-4">
+    <div>
+      <label class="block text-gray-700 font-medium mb-1">Maestro</label>
+      <select [(ngModel)]="maestroSeleccionadoId" class="rounded-lg border border-blue-200 bg-white py-2 px-3 text-blue-900 focus:ring-2 focus:ring-blue-400 shadow-sm min-w-[220px]">
+        <option [ngValue]="null">Seleccione un maestro...</option>
+        <option *ngFor="let maestro of maestrosActivos" [ngValue]="maestro.id">{{ maestro.persona?.nombre }} {{ maestro.persona?.apellido_paterno }} {{ maestro.persona?.apellido_materno }}</option>
+      </select>
+    </div>
+    <div class="flex items-end gap-2">
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Ciclo</label>
+        <input type="text" [(ngModel)]="cicloSeleccionado"  maxlength="10" placeholder="Ej: 2025" class="rounded-lg border border-blue-200 bg-white py-2 px-3 text-blue-900 focus:ring-2 focus:ring-blue-400 shadow-sm min-w-[120px]" />
+      </div>
+      <button mat-flat-button color="primary" (click)="cargarMateriasYAlumnos()" class="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">Cargar datos</button>
+    </div>
+  </div>
+  <!-- Título centrado y visible en modo oscuro -->
+  <div class="flex flex-col items-center justify-center mb-4">
+    <h1 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">{{ materiaSeleccionada?.nombre }}</h1>
+    <span class="bg-indigo-100 text-indigo-800 mt-2 py-1 px-3 rounded-full text-sm font-medium">{{ materiaSeleccionada?.seccion }}</span>
+  </div>
+  <!-- Barra de herramientas -->
+  <div class="bg-gradient-to-r from-gray-50 to-blue-50 flex flex-wrap items-center justify-between border-x border-t border-gray-300 py-4 px-3 shadow-sm rounded-lg mb-2">
+    <!-- Buscador de alumnos con mejores estilos -->
+    <div class="flex-1 flex items-center gap-2 min-w-0">
+      <div class="relative w-full max-w-md">
+        <input type="text" [(ngModel)]="filtroAlumno" placeholder="Buscar por nombre o apellido..."
+          class="w-full rounded-lg border border-blue-200 bg-white py-2 pl-10 pr-8 text-blue-900 focus:ring-2 focus:ring-blue-400 transition placeholder:text-gray-400 shadow-sm" />
+        <span class="pointer-events-none absolute left-3 top-2.5 text-blue-400">
+          <mat-icon>search</mat-icon>
+        </span>
+        <button *ngIf="filtroAlumno" type="button" class="absolute right-2 top-2.5 h-6 w-6 flex items-center justify-center bg-transparent p-0 m-0" mat-icon-button aria-label="Limpiar" (click)="filtroAlumno = ''">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+    <!-- Mensaje informativo centrado -->
+    <div class="flex-1 flex justify-center items-center min-w-0">
+      <div *ngIf="infoMessage" class="info-message-bar animate-fade-in-out">
+        <mat-icon class="text-yellow-600 mr-1">info</mat-icon>
+        <span>{{ infoMessage }}</span>
+      </div>
+    </div>
+    <!-- Opciones de tipo de nota -->
+    <div class="flex items-center gap-3 ml-4">
+      <span class="text-gray-500 font-medium text-sm">{{ tiposNota.length }} tipos de notas</span>
+      <button mat-flat-button color="primary" (click)="abrirDialogoTipoNota()" class="bg-indigo-600 hover:bg-indigo-700 text-white">
+        <mat-icon>add</mat-icon> Añadir tipo de nota
+      </button>
+      <button mat-flat-button color="primary" (click)="guardarNotas()" class="ml-2 bg-green-600 hover:bg-green-700 text-white">
+        <mat-icon>save</mat-icon> Guardar
+      </button>
+    </div>
+  </div>
+  <!-- Selector de materias -->
+  <div class="flex overflow-x-auto border-x border-t border-gray-300 bg-gray-100 shadow-sm mb-2">
+    <ng-container *ngFor="let materia of materias; let i = index">
+      <button
+        (click)="seleccionarMateria(materia)"
+        class="py-2 px-5 border-r border-gray-300 whitespace-nowrap transition-colors flex flex-col items-center"
+        [ngClass]="{
+          'bg-white': materiaSeleccionada?.id === materia.id,
+          'bg-gray-50': materiaSeleccionada?.id !== materia.id,
+          'font-semibold': materiaSeleccionada?.id === materia.id,
+          'text-indigo-700': materiaSeleccionada?.id === materia.id,
+          'text-gray-600': materiaSeleccionada?.id !== materia.id,
+          'border-b-2 border-b-indigo-600': materiaSeleccionada?.id === materia.id,
+          'hover:bg-blue-50': materiaSeleccionada?.id !== materia.id
+        }"
+      >
+        <div class="flex items-center">
+          <mat-icon class="mr-1 text-sm" [ngClass]="{
+            'text-indigo-600': materiaSeleccionada?.id === materia.id,
+            'text-gray-400': materiaSeleccionada?.id !== materia.id
+          }">book</mat-icon>
+          <span>{{ materia.nombre }}</span>
+        </div>
+        <span class="text-xs mt-1 px-2 py-0.5 rounded-full" [ngClass]="{
+          'bg-indigo-100 text-indigo-700': materiaSeleccionada?.id === materia.id,
+          'bg-gray-100 text-gray-600': materiaSeleccionada?.id !== materia.id
+        }">{{ materia.seccion }}</span>
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Tabla de notas Excel-like -->
+  <div class="overflow-x-auto border-x border-b border-gray-300 bg-white">
+    <table mat-table [dataSource]="alumnosFiltradosPaginados" class="min-w-max w-full" style="table-layout: fixed; border-collapse: collapse;">
+      <!-- Numeración de filas tipo Excel -->
+      <ng-container matColumnDef="rowNum">
+        <th mat-header-cell *matHeaderCellDef class="w-10 bg-indigo-50 font-semibold text-center border-r border-b border-gray-300 text-indigo-700">
+          <mat-icon class="text-sm">tag</mat-icon>
+        </th>
+        <td mat-cell *matCellDef="let alumno; let i = index" 
+            class="w-10 bg-indigo-50 text-center border-r border-gray-300 text-indigo-700 font-medium">
+          {{ i + 1 + currentPage * pageSize }}
+        </td>
+      </ng-container>
+      
+      <!-- Columna Alumno -->
+      <ng-container matColumnDef="alumno">
+        <th mat-header-cell *matHeaderCellDef class="w-48 bg-indigo-100 font-semibold border-r border-b border-gray-300 px-3 py-2 sticky left-10 z-10 text-indigo-800">
+          <div class="flex items-center">
+            <mat-icon class="text-indigo-600 mr-1">person</mat-icon>
+            <span>Alumno</span>
+          </div>
+        </th>
+        <td mat-cell *matCellDef="let alumno" class="w-48 border-r border-gray-300 px-3 py-2 sticky left-10 bg-white z-10 font-medium hover:bg-blue-50 text-gray-800">
+          <div>{{ alumno.nombre }} {{ alumno.apellido }}</div>
+        </td>
+      </ng-container>
+      <!-- Columnas dinámicas de tipos de nota -->
+      <ng-container *ngFor="let tipo of tiposNota" [matColumnDef]="'tipo_' + tipo.id">
+        <th mat-header-cell *matHeaderCellDef 
+            class="w-28 font-semibold text-center border-r border-b border-gray-300 px-2 py-2"
+            [ngClass]="tipo.color || 'bg-blue-50'">
+          <div class="flex items-center justify-center">
+            <span>{{ tipo.nombre }}</span>
+            <button mat-icon-button class="h-6 w-6 min-h-0 min-w-0 p-0 ml-1" (click)="editarTipoNota(tipo)" matTooltip="Editar tipo de nota">
+              <mat-icon class="text-sm">edit</mat-icon>
+            </button>
+          </div>
+          <div class="text-xs text-gray-700 font-medium py-1 px-2 rounded-full bg-white bg-opacity-70 inline-block mt-1">
+            {{ tipo.peso }}%
+          </div>
+        </th>
+        <td mat-cell *matCellDef="let alumno" class="text-center border-r border-gray-300 p-0 excel-cell bg-white">
+          <input
+            type="number"
+            min="0"
+            max="100"
+            class="w-full h-full py-2 px-1 text-center focus:outline-none transition-colors font-medium text-gray-800 bg-white"
+            [ngClass]="{
+              'bg-red-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] < 60,
+              'bg-yellow-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 60 && alumno.notas[tipo.id] < 70,
+              'bg-green-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 70,
+              'text-red-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] < 60,
+              'text-yellow-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 60 && alumno.notas[tipo.id] < 70,
+              'text-green-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 70,
+              'cell-active': alumno.notas[tipo.id] !== undefined && isLastEditedCell(alumno.id, tipo.id)
+            }"
+            [ngModel]="alumno.notas[tipo.id]"
+            (ngModelChange)="editarNota(alumno, tipo, $event)"            (focus)="onInputFocus($event); seleccionarCeldaAlumno(alumno, tipo)"
+            (click)="seleccionarCeldaAlumno(alumno, tipo)"
+          />
+        </td>
+      </ng-container>
+
+      <!-- Columnas vacías para rellenar si faltan columnas -->
+      <ng-container *ngFor="let empty of emptyNoteCols; let i = index" [matColumnDef]="'empty_col_' + i">
+        <th mat-header-cell *matHeaderCellDef class="w-28 border-r border-b border-gray-300 bg-gray-50"></th>
+        <td mat-cell *matCellDef class="border-r border-gray-300"></td>
+      </ng-container>      <!-- Columna Total -->
+      <ng-container matColumnDef="total">
+        <th mat-header-cell *matHeaderCellDef class="w-28 bg-gradient-to-r from-green-100 to-emerald-100 font-semibold text-center border-r border-b border-gray-300 px-2 py-2">
+          <div class="text-emerald-800 font-bold">Total</div>
+          <div class="text-xs bg-white rounded-full px-2 py-1 mt-1 text-emerald-700 inline-block">Promedio</div>
+        </th>
+        <td mat-cell *matCellDef="let alumno" class="border-r border-gray-300 text-center font-bold p-0">
+          <div class="flex items-center justify-center h-full w-full p-2"
+              [ngClass]="{
+                'bg-red-100 text-red-800': calcularTotal(alumno) < 60,
+                'bg-yellow-100 text-yellow-900': calcularTotal(alumno) >= 60 && calcularTotal(alumno) < 70,
+                'bg-green-100 text-green-900': calcularTotal(alumno) >= 70
+              }">
+            <div class="flex flex-col">
+              <span class="text-lg">{{ calcularTotal(alumno) }}</span>
+              <span class="text-xs font-normal"
+                  [ngClass]="{
+                    'text-red-700': calcularTotal(alumno) < 60,
+                    'text-yellow-800': calcularTotal(alumno) >= 60 && calcularTotal(alumno) < 70,
+                    'text-green-800': calcularTotal(alumno) >= 70
+                  }">
+                {{ calcularTotal(alumno) >= 70 ? 'Aprobado' : calcularTotal(alumno) >= 60 ? 'Regular' : 'Reprobado' }}
+              </span>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Encabezados de columna con letras de Excel -->      <tr class="excel-header-letters">
+        <th class="w-10 bg-gray-100 dark:bg-[#2a3142] border-r border-b border-gray-300 dark:border-[#2d3748]"></th>        <th class="w-48 bg-gray-100 dark:bg-[#2a3142] border-r border-b border-gray-300 dark:border-[#2d3748] text-center text-gray-600 dark:text-gray-300 text-xs py-1">A</th>
+        <ng-container *ngFor="let tipo of tiposNota; let i = index">
+          <th class="w-28 bg-gray-100 dark:bg-[#2a3142] border-r border-b border-gray-300 dark:border-[#2d3748] text-center text-gray-600 dark:text-gray-300 text-xs py-1">{{ getColumnLetter(i + 1) }}</th>
+        </ng-container>
+        <ng-container *ngFor="let empty of emptyNoteCols; let i = index">
+          <th class="w-28 bg-gray-100 dark:bg-[#2a3142] border-r border-b border-gray-300 dark:border-[#2d3748] text-center text-gray-600 dark:text-gray-300 text-xs py-1">{{ getColumnLetter(tiposNota.length + i + 1) }}</th>
+        </ng-container>
+        <th class="w-28 bg-gray-100 dark:bg-[#2a3142] border-r border-b border-gray-300 dark:border-[#2d3748] text-center text-gray-600 dark:text-gray-300 text-xs py-1">{{ getColumnLetter(tiposNota.length + emptyNoteCols.length + 1) }}</th>
+      </tr>      <!-- Fila header -->
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      
+      <!-- Filas de datos -->      <tr mat-row *matRowDef="let row; columns: displayedColumns" 
+          class="hover:bg-blue-50 dark:hover:bg-[#2a3142]"></tr>
+        <!-- Filas vacías para completar la cuadrícula -->
+      <tr *ngFor="let empty of emptyRows; let i = index" class="h-10 bg-gray-50 bg-opacity-30">
+        <td class="w-10 bg-gray-100 text-center border-r border-gray-300 text-gray-500">{{ alumnosFiltradosPaginados.length + empty + 1 + currentPage * pageSize }}</td>
+        <td class="w-48 border-r border-gray-300 sticky left-10 bg-white text-gray-400 italic px-3">
+          <ng-container *ngIf="i === 0 && emptyRows.length > 0">
+            <div class="flex items-center text-xs text-gray-400 dark:text-gray-500">
+              <mat-icon class="text-sm text-gray-400 dark:text-gray-500 mr-1">add</mat-icon>
+              <span>Añadir alumno...</span>
+            </div>
+          </ng-container>
+        </td>
+        <ng-container *ngFor="let tipo of tiposNota">
+          <td class="w-28 border-r border-gray-300 dark:border-[#2d3748] bg-white dark:bg-[#232a3a]"></td>
+        </ng-container>
+        <ng-container *ngFor="let ec of emptyNoteCols">
+          <td class="w-28 border-r border-gray-300 dark:border-[#2d3748] bg-white dark:bg-[#232a3a]"></td>
+        </ng-container>
+        <td class="w-28 border-r border-gray-300 dark:border-[#2d3748] bg-white dark:bg-[#232a3a]"></td>
+      </tr>
+    </table>
+  </div>
+  <!-- Barra de estado -->
+  <div class="flex items-center justify-between bg-gradient-to-r from-gray-50 to-blue-50 border-x border-b border-gray-300 rounded-b-lg py-2 px-4 text-sm shadow-sm">
+    <div class="flex items-center gap-3">
+      <span class="bg-indigo-100 text-indigo-800 font-medium px-3 py-1 rounded-full">
+        {{ alumnosFiltrados.length }} alumnos
+      </span>
+    </div>
+    <!-- Paginación -->
+    <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+      <button mat-icon-button [disabled]="currentPage === 0" (click)="onPageChange({pageIndex: currentPage - 1})"
+          class="text-gray-600 hover:text-indigo-700" [class.text-gray-400]="currentPage === 0">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span class="text-gray-700 font-medium">Página 
+        <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-lg mx-1">{{ currentPage + 1 }}</span> 
+        de {{ totalPages }}
+      </span>
+      <button mat-icon-button [disabled]="currentPage >= totalPages - 1" (click)="onPageChange({pageIndex: currentPage + 1})"
+          class="text-gray-600 hover:text-indigo-700" [class.text-gray-400]="currentPage >= totalPages - 1">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

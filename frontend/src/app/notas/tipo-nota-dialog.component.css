@@ -1,0 +1,52 @@
+mat-form-field {
+  margin-bottom: 0.5rem;
+}
+
+/* Tabla cuadrícula tipo Excel */
+table.mat-table {
+  border-collapse: separate !important;
+  border-spacing: 0;
+  background: #fff;
+}
+
+th.mat-header-cell, td.mat-cell {
+  border: 1px solid #e2e8f0 !important; /* Gris claro para las líneas */
+  padding: 0.35rem 0.5rem;
+  min-width: 80px;
+  box-sizing: border-box;
+}
+
+th.mat-header-cell {
+  background: #eaf4fb;
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: center;
+}
+
+tr.mat-row:hover td {
+  background: #f3f8fc;
+}
+
+input[type="number"] {
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+  width: 100%;
+}
+
+td.mat-cell:empty {
+  background: #f9fafb;
+}
+
+tr.h-12 td {
+  height: 48px; /* Para las filas vacías */
+}
+
+/* Estilo para columna total */
+th.mat-header-cell.bg-green-100,
+td.mat-cell.text-green-700 {
+  background: #e6fffa !important;
+  color: #059669 !important;
+  font-weight: bold;
+}

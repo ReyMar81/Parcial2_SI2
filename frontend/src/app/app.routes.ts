@@ -41,6 +41,7 @@ export const routes: Routes = [
       { path: 'inscripcion', loadComponent: () => import('./inscripcion/inscripcion.component').then(m => m.InscripcionFormComponent) },
       { path: 'perfil', component: PerfilComponent },
       { path: 'cambiar-password', component: CambiarPasswordComponent },
+      { path: 'notas', loadComponent: () => import('./notas/notas.component').then(m => m.NotasComponent) },
     ]
   }
 ];

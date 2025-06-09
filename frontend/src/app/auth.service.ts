@@ -217,6 +217,35 @@ export interface MateriaAsignada {
   horas_semanales: number;
 }
 
+// --- MateriaAsignada con alumnos (para vista de notas) ---
+export interface MateriaAsignadaConAlumnos {
+  id: number;
+  ciclo: string;
+  horas_semanales: number;
+  materia: { id: number; nombre: string };
+  maestro: { id: number; nombre: string };
+  seccion_grado: { id: number; nombre: string };
+  alumnos: AlumnoResponse[];
+}
+
+// --- Notas (Bulk Upsert) ---
+export interface NotaBulkRequest {
+  alumno: number; // id del alumno
+  tipo_nota: number; // id del tipo de nota
+  materia_asignada: number; // id de la materia_asignada
+  calificacion: number;
+  fecha?: string; // opcional, el backend la pone si no se envía
+}
+
+export interface NotaBulkResponse {
+  id: number;
+  alumno: number;
+  tipo_nota: number;
+  materia_asignada: number;
+  calificacion: number;
+  fecha: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
@@ -654,6 +683,53 @@ export class AuthService {
 
   deleteMateriaAsignada(id: number): Observable<any> {
     return this.http.delete<any>(`${this.materiaAsignadaUrl}${id}/`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Materias asignadas por maestro, con alumnos por materia/seccion_grado/ciclo ---
+  getMateriasAsignadasPorMaestro(maestroId: number, ciclo?: string): Observable<MateriaAsignadaConAlumnos[]> {
+    const params: any = { maestro: maestroId };
+    if (ciclo) params.ciclo = ciclo;
+    return this.http.get<MateriaAsignadaConAlumnos[]>(`${this.materiaAsignadaUrl}por-maestro/`, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // --- Tipos de nota ---
+  crearTipoNota(data: { nombre: string; peso: number; orden: number; materia_asignada: number }) {
+    return this.http.post<any>(`${this.API_BASE}/api/materias/tipos-nota/`, data);
+  }
+
+  /**
+   * Obtiene los tipos de nota para una materia_asignada específica
+   * @param materiaAsignadaId id de la materia_asignada
+   */
+  getTiposNotaPorMateriaAsignada(materiaAsignadaId: number) {
+    return this.http.get<any[]>(`${this.API_BASE}/api/materias/tipos-nota/por-materia-asignada/`, {
+      params: { materia_asignada: materiaAsignadaId }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  bulkUpsertNotas(notas: NotaBulkRequest[]) {
+    return this.http.post<NotaBulkResponse[]>(
+      `${this.API_BASE}/api/evaluacion/notas/bulk/`,
+      notas
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene todas las notas de los alumnos para una materia_asignada específica
+   * @param materiaAsignadaId id de la materia_asignada
+   */
+  getNotasPorMateriaAsignada(materiaAsignadaId: number) {
+    return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/notas/`, {
+      params: { materia_asignada: materiaAsignadaId }
+    }).pipe(
       catchError(this.handleError)
     );
   }

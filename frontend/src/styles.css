@@ -4,3 +4,13 @@
 @tailwind utilities;
 
 /* You can add global styles to this file, and also import other style files */
+
+/* Fondo global claro/oscuro para toda la app */
+body {
+  background: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #232a3a !important;
+  }
+}
