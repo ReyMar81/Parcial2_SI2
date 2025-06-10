@@ -6,7 +6,7 @@ from django.db.models import Max
 
 User = get_user_model()
 
-def crear_usuario_persona_rol(persona_data, rol, **extra_fields):
+def crear_usuario_persona_rol(persona_data, rol, ciclo_anio=None, **extra_fields):
     # ---- FILTRAR SOLO LOS CAMPOS DE PERSONA ----
     persona_fields = [
         'nombre', 'apellido_paterno', 'apellido_materno', 'genero',
@@ -17,7 +17,10 @@ def crear_usuario_persona_rol(persona_data, rol, **extra_fields):
     ci = persona_clean['ci']
     apellidos = f"{persona_clean['apellido_paterno']} {persona_clean.get('apellido_materno','')}".upper().strip()
     iniciales = "".join([ap[0] for ap in apellidos.split() if ap])
-    año = datetime.now().year
+    if ciclo_anio is not None:
+        año = ciclo_anio
+    else:
+        año = datetime.now().year
 
     # Definir registro y grupo según el rol
     if rol == 'alumno':
@@ -25,11 +28,11 @@ def crear_usuario_persona_rol(persona_data, rol, **extra_fields):
         # Encuentra el registro mayor para el año actual
         max_registro = Alumno.objects.filter(registro__startswith=base_registro).aggregate(Max('registro'))['registro__max']
         if max_registro:
-            last_seq = int(max_registro[-2:])
+            last_seq = int(max_registro[-4:])
             next_seq = last_seq + 1
         else:
             next_seq = 1
-        registro = f"{año}02{str(next_seq).zfill(2)}"
+        registro = f"{año}02{str(next_seq).zfill(4)}"
         base_username = f"{registro}.{iniciales}"
         username = base_username
         sufijo = 2
@@ -44,11 +47,11 @@ def crear_usuario_persona_rol(persona_data, rol, **extra_fields):
         base_registro = f"{año}01"
         max_registro = Maestro.objects.filter(registro__startswith=base_registro).aggregate(Max('registro'))['registro__max']
         if max_registro:
-            last_seq = int(max_registro[-2:])
+            last_seq = int(max_registro[-4:])
             next_seq = last_seq + 1
         else:
             next_seq = 1
-        registro = f"{año}01{str(next_seq).zfill(2)}"
+        registro = f"{año}01{str(next_seq).zfill(4)}"
         base_username = f"{registro}.{iniciales}"
         username = base_username
         sufijo = 2
@@ -59,7 +62,6 @@ def crear_usuario_persona_rol(persona_data, rol, **extra_fields):
         model = Maestro
         create_kwargs = dict(registro=registro, **extra_fields)
     elif rol == 'tutor':
-        # Sugerido: usa también sufijos para evitar duplicados de tutor si lo necesitas
         base_username = f"{ci}.{iniciales}"
         username = base_username
         sufijo = 2
