@@ -6,6 +6,11 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from datetime import date
 from apps.evaluacion.models import Nota, Asistencia, Participacion
 from apps.evaluacion.serializers import NotaSerializer, AsistenciaSerializer, ParticipacionSerializer
+from rest_framework.views import APIView
+import joblib
+import numpy as np
+from rest_framework.permissions import AllowAny
+from django.db.models import Avg
 
 class NotaViewSet(viewsets.ModelViewSet):
     queryset = Nota.objects.all()

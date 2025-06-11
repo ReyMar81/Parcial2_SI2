@@ -246,6 +246,22 @@ export interface NotaBulkResponse {
   fecha: string;
 }
 
+// --- ML Prediction Interfaces ---
+
+/**
+ * Respuesta de predicción de aprobado de materia usando ML
+ * - probability: probabilidad de aprobación (0-1)
+ * - aprobado: predicción binaria (true/false)
+ * - features: objeto con los features usados en la predicción (notas por tipo, participaciones, asistencia, etc)
+ */
+export interface PrediccionAprobadoMateriaResponse {
+  probability: number; // Probabilidad de aprobación (0-1)
+  aprobado: boolean;   // Predicción binaria
+  features: {
+    [feature: string]: number; // Ej: nota_tipo_1, nota_tipo_2, cantidad_participaciones, promedio_participaciones, porcentaje_asistencia, promedio_nota, etc
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
@@ -782,6 +798,35 @@ export class AuthService {
     return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/participaciones/por-materia-y-fecha/`, {
       params: { materia_asignada: materiaAsignadaId, fecha }
     }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Predice si un alumno aprobará una materia usando ML (envía features desde el frontend)
+   * @param features Objeto con todos los features requeridos por el modelo ML
+   * @returns Observable<PrediccionAprobadoMateriaResponse> con probabilidad, aprobado y features usados
+   */
+  predecirAprobadoAuto(features: { [feature: string]: number }): Observable<PrediccionAprobadoMateriaResponse> {
+    return this.http.post<PrediccionAprobadoMateriaResponse>(`${this.API_BASE}/api/evaluacion/predecir-aprobado-auto/`, features).pipe(
+      map(resp => {
+        // Si la respuesta tiene 'probabilidad', renómbrala a 'probability' para mantener consistencia
+        if ('probabilidad' in resp && !('probability' in resp)) {
+          (resp as any).probability = (resp as any).probabilidad;
+          delete (resp as any).probabilidad;
+        }
+        return resp;
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Predice si un alumno aprobará un examen usando ML (el backend arma los features)
+   * @param params objeto con ciclo, materia_asignada, alumno, tipo_examen
+   */
+  predecirAprobadoExamen(params: { ciclo: string, materia_asignada: number, alumno: number, tipo_examen: string }): Observable<any> {
+    return this.http.post<any>(`${this.API_BASE}/api/ml/predict-exam/`, params).pipe(
       catchError(this.handleError)
     );
   }

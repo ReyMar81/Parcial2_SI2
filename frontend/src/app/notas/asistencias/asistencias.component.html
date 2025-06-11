@@ -47,9 +47,12 @@
       </button>
     </div>
   </div>
-  <!-- Selector de materias -->
-  <div class="flex overflow-x-auto border-x border-t border-gray-300 bg-gray-100 shadow-sm mb-2">
-    <ng-container *ngFor="let materia of materias; let i = index">
+  <!-- Selector de materias con paginación visual -->
+  <div class="flex items-center overflow-x-auto border-x border-t border-gray-300 bg-gray-100 shadow-sm mb-2">
+    <button mat-icon-button class="mx-1" [disabled]="materiasCurrentPage === 0" (click)="onMateriasPageChange(-1)">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <ng-container *ngFor="let materia of materiasPaginadas; let i = index">
       <button
         (click)="seleccionarMateria(materia)"
         class="py-2 px-5 border-r border-gray-300 whitespace-nowrap transition-colors flex flex-col items-center"
@@ -76,6 +79,9 @@
         }">{{ materia.seccion }}</span>
       </button>
     </ng-container>
+    <button mat-icon-button class="mx-1" [disabled]="materiasCurrentPage >= totalMateriasPages - 1" (click)="onMateriasPageChange(1)">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
   </div>
 
   <!-- Tabla de notas Excel-like -->

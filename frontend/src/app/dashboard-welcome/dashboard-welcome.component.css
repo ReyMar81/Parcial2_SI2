@@ -1,17 +1,3 @@
 .dashboard-welcome-container {
-  padding: 0;
-  text-align: center;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-.dashboard-welcome-container h1 {
-  color: #1e3a8a;
-  font-size: 2.2rem;
-  margin-bottom: 1rem;
-}
-@media (prefers-color-scheme: dark) {
-  .dashboard-welcome-container {
-    background: transparent;
-  }
+  display: none;
 }

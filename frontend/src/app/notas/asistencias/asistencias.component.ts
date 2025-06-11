@@ -62,6 +62,23 @@ export class AsistenciasComponent {
     }
   }
 
+  // --- Paginación de materias (barra superior) ---
+  materiasPageSize = 5;
+  materiasCurrentPage = 0;
+  get totalMateriasPages(): number {
+    return Math.ceil(this.materias.length / this.materiasPageSize) || 1;
+  }
+  get materiasPaginadas(): Materia[] {
+    const start = this.materiasCurrentPage * this.materiasPageSize;
+    return this.materias.slice(start, start + this.materiasPageSize);
+  }
+  onMateriasPageChange(delta: number) {
+    const next = this.materiasCurrentPage + delta;
+    if (next >= 0 && next < this.totalMateriasPages) {
+      this.materiasCurrentPage = next;
+    }
+  }
+
   // --- Maestros y materias asignadas ---
   maestrosActivos: any[] = [];
   maestroSeleccionadoId: number | null = null;

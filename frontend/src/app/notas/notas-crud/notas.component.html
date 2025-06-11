@@ -54,9 +54,12 @@
       </button>
     </div>
   </div>
-  <!-- Selector de materias -->
-  <div class="flex overflow-x-auto border-x border-t border-gray-300 bg-gray-100 shadow-sm mb-2">
-    <ng-container *ngFor="let materia of materias; let i = index">
+  <!-- Selector de materias con paginación visual -->
+  <div class="flex items-center overflow-x-auto border-x border-t border-gray-300 bg-gray-100 shadow-sm mb-2">
+    <button mat-icon-button class="mx-1" [disabled]="materiasCurrentPage === 0" (click)="onMateriasPageChange(-1)">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <ng-container *ngFor="let materia of materiasPaginadas; let i = index">
       <button
         (click)="seleccionarMateria(materia)"
         class="py-2 px-5 border-r border-gray-300 whitespace-nowrap transition-colors flex flex-col items-center"
@@ -83,6 +86,9 @@
         }">{{ materia.seccion }}</span>
       </button>
     </ng-container>
+    <button mat-icon-button class="mx-1" [disabled]="materiasCurrentPage >= totalMateriasPages - 1" (click)="onMateriasPageChange(1)">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
   </div>
 
   <!-- Tabla de notas Excel-like -->
@@ -107,10 +113,24 @@
             <span>Alumno</span>
           </div>
         </th>
-        <td mat-cell *matCellDef="let alumno" class="w-48 border-r border-gray-300 px-3 py-2 sticky left-10 bg-white z-10 font-medium hover:bg-blue-50 text-gray-800">
-          <div>{{ alumno.nombre }} {{ alumno.apellido }}</div>
+        <td mat-cell *matCellDef="let alumno; let i = index" class="w-48 border-r border-gray-300 px-3 py-2 sticky left-10 bg-white z-10 font-medium hover:bg-blue-50 text-gray-800">
+          <div class="flex items-center gap-2">
+            <span>{{ alumno.nombre }} {{ alumno.apellido }}</span>
+            <button mat-icon-button color="accent" matTooltip="Predecir si aprobará la materia"
+              (click)="predecirMateriaAlumno(alumno)"
+              [disabled]="displayMLMateriaPredLoading[alumno.id]">
+              <mat-icon>psychology</mat-icon>
+            </button>
+            <mat-progress-spinner *ngIf="displayMLMateriaPredLoading[alumno.id]" diameter="18" mode="indeterminate"></mat-progress-spinner>
+            <span *ngIf="displayMLMateriaPredResult[alumno.id]?.probability !== undefined"
+                  class="ml-1 text-xs font-semibold"
+                  [ngClass]="{'text-green-700': displayMLMateriaPredResult[alumno.id]?.aprobado, 'text-red-700': displayMLMateriaPredResult[alumno.id] && !displayMLMateriaPredResult[alumno.id]?.aprobado}">
+              {{ displayMLMateriaPredResult[alumno.id]?.aprobado ? '✔' : '✖' }} ({{ (displayMLMateriaPredResult[alumno.id]?.probability ?? 0)*100 | number:'1.0-0' }}%)
+            </span>
+          </div>
         </td>
       </ng-container>
+
       <!-- Columnas dinámicas de tipos de nota -->
       <ng-container *ngFor="let tipo of tiposNota" [matColumnDef]="'tipo_' + tipo.id">
         <th mat-header-cell *matHeaderCellDef 
@@ -127,24 +147,39 @@
           </div>
         </th>
         <td mat-cell *matCellDef="let alumno" class="text-center border-r border-gray-300 p-0 excel-cell bg-white">
-          <input
-            type="number"
-            min="0"
-            max="100"
-            class="w-full h-full py-2 px-1 text-center focus:outline-none transition-colors font-medium text-gray-800 bg-white"
-            [ngClass]="{
-              'bg-red-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] < 60,
-              'bg-yellow-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 60 && alumno.notas[tipo.id] < 70,
-              'bg-green-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 70,
-              'text-red-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] < 60,
-              'text-yellow-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 60 && alumno.notas[tipo.id] < 70,
-              'text-green-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 70,
-              'cell-active': alumno.notas[tipo.id] !== undefined && isLastEditedCell(alumno.id, tipo.id)
-            }"
-            [ngModel]="alumno.notas[tipo.id]"
-            (ngModelChange)="editarNota(alumno, tipo, $event)"            (focus)="onInputFocus($event); seleccionarCeldaAlumno(alumno, tipo)"
-            (click)="seleccionarCeldaAlumno(alumno, tipo)"
-          />
+          <div class="flex items-center justify-center">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              class="w-full h-full py-2 px-1 text-center focus:outline-none transition-colors font-medium text-gray-800 bg-white"
+              [ngClass]="{
+                'bg-red-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] < 60,
+                'bg-yellow-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 60 && alumno.notas[tipo.id] < 70,
+                'bg-green-50': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 70,
+                'text-red-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] < 60,
+                'text-yellow-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 60 && alumno.notas[tipo.id] < 70,
+                'text-green-700': alumno.notas[tipo.id] !== undefined && alumno.notas[tipo.id] >= 70,
+                'cell-active': alumno.notas[tipo.id] !== undefined && isLastEditedCell(alumno.id, tipo.id)
+              }"
+              [ngModel]="alumno.notas[tipo.id]"
+              (ngModelChange)="editarNota(alumno, tipo, $event)"
+              (focus)="onInputFocus($event); seleccionarCeldaAlumno(alumno, tipo)"
+              (click)="seleccionarCeldaAlumno(alumno, tipo)"
+              [readonly]="false"
+            />
+            <button *ngIf="tipo.nombre.toLowerCase().includes('examen') && (alumno.notas[tipo.id] === undefined || alumno.notas[tipo.id] === null || alumno.notas[tipo.id] === '')"
+                    mat-icon-button color="accent" class="ml-1"
+                    [disabled]="displayMLPredLoading[alumno.id]?.[tipo.id]"
+                    (click)="predecirExamenAlumno(alumno, tipo)">
+              <mat-icon>psychology</mat-icon>
+            </button>
+            <mat-progress-spinner *ngIf="displayMLPredLoading[alumno.id]?.[tipo.id]" diameter="18" mode="indeterminate"></mat-progress-spinner>
+            <span *ngIf="displayMLPredResult[alumno.id]?.[tipo.id]" class="ml-1 text-xs font-semibold"
+                  [ngClass]="{'text-green-700': displayMLPredResult[alumno.id][tipo.id]?.aprobado, 'text-red-700': !displayMLPredResult[alumno.id][tipo.id]?.aprobado}">
+              {{ displayMLPredResult[alumno.id][tipo.id]?.aprobado ? '✔' : '✖' }} ({{ (displayMLPredResult[alumno.id][tipo.id]?.probabilidad_aprobado*100).toFixed(0) }}%)
+            </span>
+          </div>
         </td>
       </ng-container>
 
@@ -161,19 +196,17 @@
         <td mat-cell *matCellDef="let alumno" class="border-r border-gray-300 text-center font-bold p-0">
           <div class="flex items-center justify-center h-full w-full p-2"
               [ngClass]="{
-                'bg-red-100 text-red-800': calcularTotal(alumno) < 60,
-                'bg-yellow-100 text-yellow-900': calcularTotal(alumno) >= 60 && calcularTotal(alumno) < 70,
-                'bg-green-100 text-green-900': calcularTotal(alumno) >= 70
+                'bg-red-100 text-red-800': calcularTotal(alumno) < 51,
+                'bg-green-100 text-green-900': calcularTotal(alumno) >= 51
               }">
             <div class="flex flex-col">
               <span class="text-lg">{{ calcularTotal(alumno) }}</span>
               <span class="text-xs font-normal"
                   [ngClass]="{
-                    'text-red-700': calcularTotal(alumno) < 60,
-                    'text-yellow-800': calcularTotal(alumno) >= 60 && calcularTotal(alumno) < 70,
-                    'text-green-800': calcularTotal(alumno) >= 70
+                    'text-red-700': calcularTotal(alumno) < 51,
+                    'text-green-800': calcularTotal(alumno) >= 51
                   }">
-                {{ calcularTotal(alumno) >= 70 ? 'Aprobado' : calcularTotal(alumno) >= 60 ? 'Regular' : 'Reprobado' }}
+                {{ calcularTotal(alumno) >= 51 ? 'Aprobado' : 'Reprobado' }}
               </span>
             </div>
           </div>
@@ -237,5 +270,13 @@
         <mat-icon>chevron_right</mat-icon>
       </button>
     </div>
+  </div>
+  <!-- ML DEMO: Botón y resultado de predicción de examen -->
+  <div class="flex items-center gap-4 mt-4">
+    <button mat-raised-button color="accent" (click)="demoPredecirAprobadoExamen()" [disabled]="mlDemoLoading">
+      Probar predicción ML de examen
+    </button>
+    <mat-progress-spinner *ngIf="mlDemoLoading" diameter="24" mode="indeterminate"></mat-progress-spinner>
+    <span *ngIf="mlDemoResult" class="ml-2 font-semibold text-blue-700">{{ mlDemoResult }}</span>
   </div>
 </div>

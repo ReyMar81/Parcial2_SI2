@@ -1,5 +1,5 @@
 import { Component, ViewChildren, QueryList, ElementRef, HostListener, AfterViewInit } from '@angular/core';
-import { NgFor, NgIf, NgClass } from '@angular/common';
+import { NgFor, NgIf, NgClass, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -12,7 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatMenuModule } from '@angular/material/menu';
 import { TipoNotaDialogComponent, TipoNotaDialogData } from './tipo-nota-dialog.component';
-import { AuthService, MaestroResponse, MateriaAsignadaConAlumnos } from '../../auth.service';
+import { AuthService, MaestroResponse, MateriaAsignadaConAlumnos, PrediccionAprobadoMateriaResponse } from '../../auth.service';
 
 interface Alumno {
   id: number;
@@ -40,7 +40,7 @@ interface Materia {
   templateUrl: './notas.component.html',
   styleUrls: ['./notas.component.css'],
   standalone: true,  imports: [
-    NgFor, NgIf, NgClass, FormsModule,
+    NgFor, NgIf, NgClass, DecimalPipe, FormsModule,
     MatTableModule, MatFormFieldModule, MatInputModule, MatIconModule, MatButtonModule, MatDialogModule, MatTooltipModule, MatProgressSpinnerModule, MatPaginatorModule, MatMenuModule
   ],
 })
@@ -85,6 +85,34 @@ export class NotasComponent {  // Array de columnas para MatTable - se actualiza
   infoTimeout: any;
 
   private notasOriginales: { [alumnoId: number]: { [tipoNotaId: number]: number } } = {};
+
+  // === ML Demo ===
+  mlDemoResult: string | null = null;
+  mlDemoLoading: boolean = false;
+
+  demoPredecirAprobadoExamen(): void {
+    // Usa los nombres de features exactamente como los espera el modelo
+    const features: any = {
+      'Tarea 1_1': 80,
+      'Tarea 2_1': 75,
+      'Examen 1_1': 60,
+      'Exposición 1_1': 90,
+      'porcentaje_asistencia': 0.95,
+      'promedio_participacion': 8.5
+      // Agrega más features si tu modelo los espera
+    };
+    this.mlDemoLoading = true;
+    this.auth.predecirAprobadoExamen(features).subscribe({
+      next: (resp: any) => {
+        this.mlDemoResult = `¿Aprobaría? ${resp.aprobado ? 'Sí' : 'No'} (Prob: ${(resp.probabilidad_aprobado*100).toFixed(1)}%)`;
+        this.mlDemoLoading = false;
+      },
+      error: (err: any) => {
+        this.mlDemoResult = 'Error en la predicción';
+        this.mlDemoLoading = false;
+      }
+    });
+  }
 
   constructor(private dialog: MatDialog, private auth: AuthService) {
     // Restaurar selección de maestro, ciclo y materia desde localStorage
@@ -446,6 +474,23 @@ export class NotasComponent {  // Array de columnas para MatTable - se actualiza
     this.cargarMateriasYAlumnos();
   }
 
+  // --- Paginación de materias (barra superior) ---
+  materiasPageSize = 5;
+  materiasCurrentPage = 0;
+  get totalMateriasPages(): number {
+    return Math.ceil(this.materias.length / this.materiasPageSize) || 1;
+  }
+  get materiasPaginadas(): Materia[] {
+    const start = this.materiasCurrentPage * this.materiasPageSize;
+    return this.materias.slice(start, start + this.materiasPageSize);
+  }
+  onMateriasPageChange(delta: number) {
+    const next = this.materiasCurrentPage + delta;
+    if (next >= 0 && next < this.totalMateriasPages) {
+      this.materiasCurrentPage = next;
+    }
+  }
+
   guardarNotas() {
     if (!this.materiaSeleccionada) return;
     const notas: any[] = [];
@@ -481,6 +526,92 @@ export class NotasComponent {  // Array de columnas para MatTable - se actualiza
       },
       error: (err) => {
         this.showInfoMessage('Error al guardar notas. Intenta de nuevo.');
+      }
+    });
+  }
+
+  // Predicción ML para un examen de un alumno
+  displayMLPredLoading: { [alumnoId: number]: { [tipoNotaId: number]: boolean } } = {};
+  displayMLPredResult: { [alumnoId: number]: { [tipoNotaId: number]: any } } = {};
+
+  predecirExamenAlumno(alumno: any, tipoNota: TipoNota) {
+    if (!this.materiaSeleccionada || !this.cicloSeleccionado) return;
+    const materia_asignada = this.materiaSeleccionada.id;
+    const ciclo = this.cicloSeleccionado;
+    const alumnoId = alumno.id;
+    let tipo_examen = tipoNota.nombre;
+    if (!/\d/.test(tipo_examen) && tipoNota.orden > 1) {
+      tipo_examen = `${tipo_examen} ${tipoNota.orden}`;
+    }
+
+    // LOG para depuración: ver qué se envía al backend
+    console.log('ML PREDICT PARAMS:', { ciclo, materia_asignada, alumno: alumnoId, tipo_examen });
+
+    if (!this.displayMLPredLoading[alumnoId]) this.displayMLPredLoading[alumnoId] = {};
+    this.displayMLPredLoading[alumnoId][tipoNota.id] = true;
+    if (!this.displayMLPredResult[alumnoId]) this.displayMLPredResult[alumnoId] = {};
+    this.auth.predecirAprobadoExamen({
+      ciclo,
+      materia_asignada,
+      alumno: alumnoId,
+      tipo_examen
+    }).subscribe({
+      next: (resp: any) => {
+        // LOG para depuración: ver respuesta del backend
+        console.log('ML PREDICT RESPONSE:', resp);
+        this.displayMLPredResult[alumnoId][tipoNota.id] = resp;
+        this.displayMLPredLoading[alumnoId][tipoNota.id] = false;
+      },
+      error: (err: any) => {
+        // LOG para depuración: ver error del backend
+        console.error('ML PREDICT ERROR:', err);
+        this.displayMLPredResult[alumnoId][tipoNota.id] = { aprobado: false, probabilidad_aprobado: 0 };
+        this.displayMLPredLoading[alumnoId][tipoNota.id] = false;
+      }
+    });
+  }
+
+  // --- ML para materia ---
+  displayMLMateriaPredLoading: { [alumnoId: number]: boolean } = {};
+  displayMLMateriaPredResult: { [alumnoId: number]: PrediccionAprobadoMateriaResponse|null } = {};
+
+  predecirMateriaAlumno(alumno: any) {
+    if (!this.materiaSeleccionada) return;
+    const materia_asignada = this.materiaSeleccionada.id;
+    const alumnoId = alumno.id;
+
+    // Construir features para el modelo ML
+    const features: any = {};
+    // Agregar una propiedad por cada tipo de nota (usando el nombre del tipo de nota)
+    for (const tipo of this.tiposNota) {
+      // Usa el nombre del tipo de nota como clave, o ajusta según el CSV de entrenamiento
+      features[tipo.nombre] = alumno.notas[tipo.id] ?? 0;
+    }
+    // Si tienes datos de participaciones y asistencia, agrégalos aquí
+    // Por ahora, valores dummy (ajusta según tu estructura de datos)
+    features['cantidad_participaciones'] = alumno.cantidad_participaciones ?? 0;
+    features['promedio_participacion'] = alumno.promedio_participacion ?? 0;
+    features['porcentaje_asistencia'] = alumno.porcentaje_asistencia ?? 0;
+    // Promedio de nota (puedes calcularlo aquí)
+    const notas = this.tiposNota.map(t => alumno.notas[t.id] ?? 0);
+    features['promedio_nota'] = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+
+    // LOG para depuración: ver qué features se envían al backend
+    console.log('[ML MATERIA PREDICT FEATURES]:', features);
+    this.displayMLMateriaPredLoading[alumnoId] = true;
+    this.displayMLMateriaPredResult[alumnoId] = null;
+    this.auth.predecirAprobadoAuto(features).subscribe({
+      next: (resp: PrediccionAprobadoMateriaResponse) => {
+        // LOG para depuración: ver respuesta del backend
+        console.log('[ML MATERIA PREDICT RESPONSE]:', resp);
+        this.displayMLMateriaPredResult[alumnoId] = resp;
+        this.displayMLMateriaPredLoading[alumnoId] = false;
+      },
+      error: (err: any) => {
+        // LOG para depuración: ver error del backend
+        console.error('[ML MATERIA PREDICT ERROR]:', err);
+        this.displayMLMateriaPredResult[alumnoId] = { aprobado: false, probability: 0, features: {} };
+        this.displayMLMateriaPredLoading[alumnoId] = false;
       }
     });
   }
