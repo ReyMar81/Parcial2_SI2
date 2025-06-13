@@ -268,7 +268,7 @@ export class AuthService {
   public router = inject(Router);
 
   // --- Endpoints centralizados ---
-  private API_BASE = 'http://localhost:8000';
+  private API_BASE = 'http://34.224.28.185:8000';
   private apiUrl = `${this.API_BASE}/auth/token/`;
   private perfilUrl = `${this.API_BASE}/api/personas/perfil/`;
   private inscripcionUrl = `${this.API_BASE}/api/personas/inscripcion/`;
