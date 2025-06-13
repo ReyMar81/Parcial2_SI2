@@ -51,28 +51,23 @@ class NotaViewSet(viewsets.ModelViewSet):
         """
         Permite crear o actualizar muchas notas en una sola petición (upsert).
         Espera un array de objetos con los campos: alumno, tipo_nota, materia_asignada, calificacion.
-        Solo se permite un tipo_nota y materia_asignada por petición para minimizar la carga y evitar errores.
+        Puede enviar notas de diferentes tipos y materias.
         """
         notas_data = request.data
         if not isinstance(notas_data, list) or not notas_data:
             return Response({'error': 'Se espera una lista de notas no vacía.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validar que todas las notas sean del mismo tipo_nota y materia_asignada
-        tipo_nota_set = set(n['tipo_nota'] for n in notas_data)
-        materia_asignada_set = set(n['materia_asignada'] for n in notas_data)
-        if len(tipo_nota_set) != 1 or len(materia_asignada_set) != 1:
-            return Response({'error': 'Todas las notas deben ser del mismo tipo_nota y materia_asignada.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        tipo_nota_id = list(tipo_nota_set)[0]
-        materia_asignada_id = list(materia_asignada_set)[0]
-
         results = []
         errors = []
         for idx, nota in enumerate(notas_data):
+            # Validar campos mínimos
+            required_fields = ['alumno', 'tipo_nota', 'materia_asignada', 'calificacion']
+            if not all(field in nota for field in required_fields):
+                errors.append({'index': idx, 'errors': f'Faltan campos requeridos: {required_fields}'})
+                continue
             if 'fecha' not in nota or not nota['fecha']:
                 nota['fecha'] = date.today()
-            # Buscar si ya existe la nota (alumno + tipo_nota + materia_asignada)
-            obj = Nota.objects.filter(alumno=nota['alumno'], tipo_nota=tipo_nota_id, materia_asignada=materia_asignada_id).first()
+            obj = Nota.objects.filter(alumno=nota['alumno'], tipo_nota=nota['tipo_nota'], materia_asignada=nota['materia_asignada']).first()
             serializer = NotaSerializer(obj, data=nota)
             if serializer.is_valid():
                 nota_obj = serializer.save()
@@ -84,10 +79,10 @@ class NotaViewSet(viewsets.ModelViewSet):
                     alumno_obj = Alumno.objects.get(id=nota['alumno'])
                     persona = alumno_obj.persona
                     user = persona.usuario
-                    materia_asignada = MateriaAsignada.objects.get(id=materia_asignada_id)
+                    materia_asignada = MateriaAsignada.objects.get(id=nota['materia_asignada'])
                     materia_nombre = materia_asignada.materia.nombre
                     maestro_nombre = materia_asignada.maestro.persona.nombre + ' ' + materia_asignada.maestro.persona.apellido_paterno
-                    tipo_nota = TipoNota.objects.get(id=tipo_nota_id)
+                    tipo_nota = TipoNota.objects.get(id=nota['tipo_nota'])
                     tipo_nota_nombre = tipo_nota.nombre
                     tokens = FCMToken.objects.filter(user=user)
                     for t in tokens:
