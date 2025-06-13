@@ -2,13 +2,15 @@ from datetime import timedelta
 import os
 from pathlib import Path
 
-# Ruta base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
+FIREBASE_CREDENTIALS = os.path.join(BASE_DIR, "gestion-escolar-f60de-firebase-adminsdk-fbsvc-350a48733e.json")
+FIREBASE_PROJECT_ID = "gestion-escolar-f60de"  # Lo encuentras en el archivo JSON como project_id
+
 
 # Seguridad
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'tu_clave_secreta_aqui')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split() or ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
@@ -125,8 +127,4 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",  # Angular local
-    # agrega aquí tu dominio cuando subas a producción, ejemplo:
-    # "https://mi-frontend.com",
-]
+CORS_ALLOW_ALL_ORIGINS = True

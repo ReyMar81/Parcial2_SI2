@@ -3,17 +3,19 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
+from sklearn.model_selection import cross_val_score
+import numpy as np
 
 # Cargar datos combinados (real + sintéticos)
-DATA_PATH = 'ml/datos_ml.csv'  # Cambia aquí si usas otro nombre
+DATA_PATH = 'ml/datos_ml.csv'
 print(f"Cargando datos desde: {DATA_PATH}")
 df = pd.read_csv(DATA_PATH)
 print(f"Shape del dataset: {df.shape}")
 
-# Features: todas las columnas de notas, cantidad y promedio de participaciones, asistencia, promedio_nota
+# Features: todas las columnas de notas, cantidad y promedio de participaciones, asistencia
 feature_cols = [
     col for col in df.columns
-    if col not in ['alumno_id', 'materia_asignada_id', 'materia', 'ciclo', 'aprobado', 'fecha_corte']
+    if col not in ['alumno_id', 'materia_asignada_id', 'materia', 'ciclo', 'aprobado', 'fecha_corte', 'promedio_nota']
 ]
 X = df[feature_cols].fillna(0)
 y = df['aprobado']
@@ -40,6 +42,19 @@ print("Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 print("Classification Report:")
 print(classification_report(y_test, y_pred, digits=3))
+
+# Robustez extra: validación cruzada y feature importance
+
+# Validación cruzada (5-fold)
+scores = cross_val_score(model, X, y, cv=5, scoring='accuracy')
+print(f"Accuracy promedio (5-fold CV): {np.mean(scores):.3f} ± {np.std(scores):.3f}")
+
+# Importancia de features
+importances = model.feature_importances_
+feature_importance = sorted(zip(feature_cols, importances), key=lambda x: x[1], reverse=True)
+print("Top 10 features más importantes:")
+for feat, imp in feature_importance[:10]:
+    print(f"{feat}: {imp:.4f}")
 
 # Revisión rápida de fuga de información: correlación de features con el target
 correlations = df[feature_cols + ['aprobado']].corr()['aprobado'].abs().sort_values(ascending=False)

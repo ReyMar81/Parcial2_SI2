@@ -71,23 +71,113 @@ class MateriaAsignadaViewSet(viewsets.ModelViewSet):
     def materias_asignadas_por_maestro(self, request):
         maestro_id = request.query_params.get("maestro")
         ciclo = request.query_params.get("ciclo")
-        if not maestro_id:
-            return Response({"error": "Debe proporcionar el id del maestro"}, status=400)
+        print(f"[LOG] maestro_id: {maestro_id}, ciclo: {ciclo}")
         qs = self.get_queryset().filter(maestro_id=maestro_id)
         if ciclo:
             qs = qs.filter(ciclo=ciclo)
+        print(f"[LOG] queryset count: {qs.count()}")
         result = []
         for ma in qs:
-            # Buscar alumnos activos en la seccion_grado y ciclo
+            print(f"[LOG] MateriaAsignada: id={ma.id}, ciclo={ma.ciclo}, maestro_id={ma.maestro_id}")
             alumnos_qs = SeccionAlumno.objects.filter(
                 seccion_grado=ma.seccion_grado,
                 ciclo=ma.ciclo,
                 estado='activo'
             )
+            print(f"[LOG] Alumnos count for materia_asignada {ma.id}: {alumnos_qs.count()}")
             alumnos = [AlumnoSerializer(sa.alumno).data for sa in alumnos_qs]
             ma_data = self.get_serializer(ma).data
             ma_data["alumnos"] = alumnos
             result.append(ma_data)
+        return Response(result)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("maestro", OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="ID del maestro"),
+            OpenApiParameter("ciclo", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Ciclo escolar (opcional)")
+        ],
+        responses={200: dict},
+        description="Lista solo las materias asignadas a un maestro y ciclo, sin incluir alumnos. Respuesta ligera para apps móviles."
+    )
+    @action(detail=False, methods=["get"], url_path="por-maestro-simple")
+    def materias_asignadas_por_maestro_simple(self, request):
+        maestro_id = request.query_params.get("maestro")
+        ciclo = request.query_params.get("ciclo")
+        qs = self.get_queryset().filter(maestro_id=maestro_id)
+        if ciclo:
+            qs = qs.filter(ciclo=ciclo)
+        result = []
+        for ma in qs:
+            result.append({
+                "id": ma.id,
+                "ciclo": ma.ciclo,
+                "materia": {"id": ma.materia.id, "nombre": ma.materia.nombre},
+                "seccion_grado": {
+                    "id": ma.seccion_grado.id,
+                    "nombre": str(ma.seccion_grado)
+                }
+            })
+        return Response(result)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("materia_asignada", OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="ID de la materia_asignada")
+        ],
+        responses={200: dict},
+        description="Lista los alumnos activos de una materia_asignada específica y ciclo."
+    )
+    @action(detail=False, methods=["get"], url_path="alumnos-por-materia-asignada")
+    def alumnos_por_materia_asignada(self, request):
+        materia_asignada_id = request.query_params.get("materia_asignada")
+        if not materia_asignada_id:
+            return Response({'error': 'Debe proporcionar el id de materia_asignada'}, status=400)
+        try:
+            ma = MateriaAsignada.objects.get(id=materia_asignada_id)
+        except MateriaAsignada.DoesNotExist:
+            return Response({'error': 'Materia asignada no encontrada'}, status=404)
+        ciclo = ma.ciclo
+        alumnos_qs = SeccionAlumno.objects.filter(
+            seccion_grado=ma.seccion_grado,
+            ciclo=ciclo,
+            estado='activo'
+        )
+        alumnos = [AlumnoSerializer(sa.alumno).data for sa in alumnos_qs]
+        return Response(alumnos)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("alumno", OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="ID del alumno"),
+            OpenApiParameter("ciclo", OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Ciclo escolar (opcional)")
+        ],
+        responses={200: dict},
+        description="Lista las materias asignadas a un alumno, filtrando por ciclo si se provee. Respuesta ligera para apps móviles."
+    )
+    @action(detail=False, methods=["get"], url_path="por-alumno")
+    def materias_asignadas_por_alumno(self, request):
+        alumno_id = request.query_params.get("alumno")
+        ciclo = request.query_params.get("ciclo")
+        if not alumno_id:
+            return Response({'error': 'Debe proporcionar el id de alumno'}, status=400)
+        from apps.secciones.models import SeccionAlumno
+        seccion_alumnos = SeccionAlumno.objects.filter(alumno_id=alumno_id, estado='activo')
+        if ciclo:
+            seccion_alumnos = seccion_alumnos.filter(ciclo=ciclo)
+        seccion_grado_ids = seccion_alumnos.values_list('seccion_grado_id', flat=True)
+        qs = self.get_queryset().filter(seccion_grado_id__in=seccion_grado_ids)
+        if ciclo:
+            qs = qs.filter(ciclo=ciclo)
+        qs = qs.distinct()
+        result = []
+        for ma in qs:
+            result.append({
+                "id": ma.id,
+                "ciclo": ma.ciclo,
+                "materia": {"id": ma.materia.id, "nombre": ma.materia.nombre},
+                "seccion_grado": {
+                    "id": ma.seccion_grado.id,
+                    "nombre": str(ma.seccion_grado)
+                }
+            })
         return Response(result)
 
 class TipoNotaViewSet(viewsets.ModelViewSet):

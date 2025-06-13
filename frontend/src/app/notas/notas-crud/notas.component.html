@@ -179,6 +179,11 @@
                   [ngClass]="{'text-green-700': displayMLPredResult[alumno.id][tipo.id]?.aprobado, 'text-red-700': !displayMLPredResult[alumno.id][tipo.id]?.aprobado}">
               {{ displayMLPredResult[alumno.id][tipo.id]?.aprobado ? '✔' : '✖' }} ({{ (displayMLPredResult[alumno.id][tipo.id]?.probabilidad_aprobado*100).toFixed(0) }}%)
             </span>
+            <button *ngIf="displayMLPredResult[alumno.id]?.[tipo.id]" mat-icon-button color="primary" class="ml-1"
+                    matTooltip="Enviar notificación personalizada al alumno y tutores"
+                    (click)="abrirDialogoPrediccion(alumno, displayMLPredResult[alumno.id][tipo.id], materiaSeleccionada, tipo.nombre)">
+              <mat-icon>psychology_alt</mat-icon>
+            </button>
           </div>
         </td>
       </ng-container>

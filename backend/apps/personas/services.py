@@ -3,6 +3,11 @@ from django.contrib.auth.models import Group, User
 from apps.personas.models import Persona, Alumno, Maestro, Tutor
 from datetime import datetime
 from django.db.models import Max
+import json
+import requests
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+from django.conf import settings
 
 User = get_user_model()
 
@@ -84,3 +89,37 @@ def crear_usuario_persona_rol(persona_data, rol, ciclo_anio=None, **extra_fields
     persona = Persona.objects.create(usuario=user, **persona_clean)
     rol_instance = model.objects.create(persona=persona, **create_kwargs)
     return rol_instance
+
+def send_fcm_v1_notification(token, title, body, data=None):
+    print(f"[FCM DEBUG] Intentando enviar notificación a token: {token}")
+    print(f"[FCM DEBUG] Título: {title} | Mensaje: {body}")
+    credentials = service_account.Credentials.from_service_account_file(
+        settings.FIREBASE_CREDENTIALS,
+        scopes=["https://www.googleapis.com/auth/firebase.messaging"]
+    )
+    credentials.refresh(Request())
+
+    message = {
+        "message": {
+            "token": token,
+            "notification": {
+                "title": title,
+                "body": body
+            }
+        }
+    }
+    if data:
+        message["message"]["data"] = data
+    print(f"[FCM DEBUG] Payload: {json.dumps(message)}")
+
+    url = f"https://fcm.googleapis.com/v1/projects/{settings.FIREBASE_PROJECT_ID}/messages:send"
+    headers = {
+        "Authorization": f"Bearer {credentials.token}",
+        "Content-Type": "application/json; UTF-8",
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(message))
+    print(f"[FCM DEBUG] Respuesta de FCM: {response.status_code} - {response.text}")
+    if response.status_code != 200:
+        print(f"[FCM v1 ERROR] {response.status_code}: {response.text}")
+    return response

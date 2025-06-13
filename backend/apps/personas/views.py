@@ -4,13 +4,16 @@ from apps.personas.models import Persona, Alumno, Maestro, Tutor, TutorAlumno
 from apps.personas.serializers import PersonaSerializer, AlumnoSerializer, MaestroSerializer, TutorSerializer, TutorAlumnoSerializer, InscripcionSerializer, ActualizarAlumnosTutorSerializer
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from apps.personas.services import crear_usuario_persona_rol
+from apps.personas.services import crear_usuario_persona_rol, send_fcm_v1_notification
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from apps.secciones.models import Seccion, SeccionAlumno
 from datetime import date
 from rest_framework import serializers
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from .models import FCMToken
 
 class PersonaViewSet(viewsets.ModelViewSet):
     serializer_class = PersonaSerializer
@@ -315,15 +318,62 @@ def perfil_usuario(request):
         'privilegios': user_permissions,
         'roles': user_groups,
     }
-    # Verificar tipo de persona y agregar detalles
-    if hasattr(persona, 'alumno'):
+    # Verificar tipo de persona y agregar detalles anidados
+    if hasattr(persona, 'alumno') and persona.alumno is not None:
         data['alumno'] = AlumnoSerializer(persona.alumno).data
-    if hasattr(persona, 'maestro'):
+    if hasattr(persona, 'maestro') and persona.maestro is not None:
         data['maestro'] = MaestroSerializer(persona.maestro).data
-    if hasattr(persona, 'tutor'):
+    if hasattr(persona, 'tutor') and persona.tutor is not None:
         data['tutor'] = TutorSerializer(persona.tutor).data
         # Alumnos asociados a este tutor
         alumnos = persona.tutor.alumnos_asociados.all()
-        data['alumnos_asociados'] = [AlumnoSerializer(a.alumno).data for a in alumnos]
-    
     return Response(data)
+
+class RegisterFCMToken(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('token')
+        user = request.user
+        if token:
+            # Si el token ya existe, actualizar el usuario asociado
+            obj, created = FCMToken.objects.update_or_create(
+                token=token,
+                defaults={'user': user}
+            )
+            return Response({'status': 'ok', 'created': created})
+        return Response({'error': 'No token'}, status=400)
+
+class EnviarNotificacionAlumnoTutores(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        alumno_id = request.data.get('alumno_id')
+        mensaje = request.data.get('mensaje')
+        titulo = request.data.get('titulo', 'Alerta de predicción')
+        porcentaje = request.data.get('porcentaje')
+        data = request.data.get('data', {})
+        if not alumno_id or not mensaje:
+            return Response({'error': 'alumno_id y mensaje son requeridos'}, status=400)
+        try:
+            from apps.personas.models import Alumno, TutorAlumno, FCMToken
+            alumno = Alumno.objects.get(id=alumno_id)
+            user_alumno = alumno.persona.usuario
+            # Tokens del alumno
+            tokens_alumno = FCMToken.objects.filter(user=user_alumno)
+            # Tokens de tutores
+            tutores = TutorAlumno.objects.filter(alumno=alumno, activo=True).select_related('tutor__persona__usuario')
+            tokens_tutores = FCMToken.objects.filter(user__in=[t.tutor.persona.usuario for t in tutores])
+            # Enviar a todos los tokens
+            for t in list(tokens_alumno) + list(tokens_tutores):
+                # Convertir todos los valores de data a string para FCM
+                data_str = {k: str(v) if v is not None else '' for k, v in {**data, "tipo": "alerta_prediccion", "mensaje": mensaje, "porcentaje": str(porcentaje) if porcentaje else ""}.items()}
+                send_fcm_v1_notification(
+                    t.token,
+                    title=titulo,
+                    body=f"{mensaje} (Probabilidad: {porcentaje}%)" if porcentaje else mensaje,
+                    data=data_str
+                )
+            return Response({'status': 'ok'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import PersonaViewSet, AlumnoViewSet, MaestroViewSet, TutorViewSet, TutorAlumnoViewSet, perfil_usuario, inscripcion
+from .views import PersonaViewSet, AlumnoViewSet, MaestroViewSet, TutorViewSet, TutorAlumnoViewSet, perfil_usuario, inscripcion, RegisterFCMToken, EnviarNotificacionAlumnoTutores
 from django.urls import path
 
 router = DefaultRouter()
@@ -14,4 +14,6 @@ urlpatterns = router.urls
 urlpatterns += [
     path('perfil/', perfil_usuario, name='perfil_usuario'),
     path('inscripcion/', inscripcion, name='inscripcion'),
+    path('fcm/register/', RegisterFCMToken.as_view(), name='register-fcm-token'),
+    path('enviar-notificacion-alumno-tutores/', EnviarNotificacionAlumnoTutores.as_view(), name='enviar-notificacion-alumno-tutores'),
 ]

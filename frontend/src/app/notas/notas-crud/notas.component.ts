@@ -13,6 +13,9 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatMenuModule } from '@angular/material/menu';
 import { TipoNotaDialogComponent, TipoNotaDialogData } from './tipo-nota-dialog.component';
 import { AuthService, MaestroResponse, MateriaAsignadaConAlumnos, PrediccionAprobadoMateriaResponse } from '../../auth.service';
+import { forkJoin, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { PrediccionDialogComponent } from '../../prediccion-dialog.component';
 
 interface Alumno {
   id: number;
@@ -25,7 +28,7 @@ interface TipoNota {
   id: number;
   nombre: string;
   color: string;
-  peso: number; // porcentaje
+  peso: number;
   orden: number;
 }
 
@@ -44,7 +47,7 @@ interface Materia {
     MatTableModule, MatFormFieldModule, MatInputModule, MatIconModule, MatButtonModule, MatDialogModule, MatTooltipModule, MatProgressSpinnerModule, MatPaginatorModule, MatMenuModule
   ],
 })
-export class NotasComponent {  // Array de columnas para MatTable - se actualiza dinámicamente con los getters
+export class NotasComponent { 
   displayedColumns: string[] = [];
   
   // Datos de materias y alumnos ahora dinámicos
@@ -57,7 +60,7 @@ export class NotasComponent {  // Array de columnas para MatTable - se actualiza
   // === Ajustes Excel ===
   pageSize = 12; // filas por página
   currentPage = 0;
-  minTiposNota = 5; // columnas mínimas de notas (rellena con vacías si hay menos)
+  minTiposNota = 5; // columnas mínimas de notas
 
   // === Celdas seleccionadas ===
   selectedCell: { row: number, col: number } | null = null;
@@ -576,42 +579,89 @@ export class NotasComponent {  // Array de columnas para MatTable - se actualiza
   displayMLMateriaPredResult: { [alumnoId: number]: PrediccionAprobadoMateriaResponse|null } = {};
 
   predecirMateriaAlumno(alumno: any) {
-    if (!this.materiaSeleccionada) return;
+    if (!this.materiaSeleccionada || !this.cicloSeleccionado) return;
     const materia_asignada = this.materiaSeleccionada.id;
     const alumnoId = alumno.id;
+    const hoy = new Date();
+    const fechaHoy = hoy.toISOString().slice(0, 10);
 
-    // Construir features para el modelo ML
-    const features: any = {};
-    // Agregar una propiedad por cada tipo de nota (usando el nombre del tipo de nota)
-    for (const tipo of this.tiposNota) {
-      // Usa el nombre del tipo de nota como clave, o ajusta según el CSV de entrenamiento
-      features[tipo.nombre] = alumno.notas[tipo.id] ?? 0;
-    }
-    // Si tienes datos de participaciones y asistencia, agrégalos aquí
-    // Por ahora, valores dummy (ajusta según tu estructura de datos)
-    features['cantidad_participaciones'] = alumno.cantidad_participaciones ?? 0;
-    features['promedio_participacion'] = alumno.promedio_participacion ?? 0;
-    features['porcentaje_asistencia'] = alumno.porcentaje_asistencia ?? 0;
-    // Promedio de nota (puedes calcularlo aquí)
-    const notas = this.tiposNota.map(t => alumno.notas[t.id] ?? 0);
-    features['promedio_nota'] = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+    const asistencias$ = this.auth.getAsistenciasPorMateria(materia_asignada);
+    const participaciones$ = this.auth.getParticipacionesPorMateria(materia_asignada);
 
-    // LOG para depuración: ver qué features se envían al backend
-    console.log('[ML MATERIA PREDICT FEATURES]:', features);
     this.displayMLMateriaPredLoading[alumnoId] = true;
     this.displayMLMateriaPredResult[alumnoId] = null;
-    this.auth.predecirAprobadoAuto(features).subscribe({
+
+    // Helper para obtener la nota o 0 si no existe
+    const getNotaByNombre = (nombre: string): number => {
+      const tipo = this.tiposNota.find((t: any) => t.nombre === nombre);
+      if (tipo && alumno.notas && alumno.notas.hasOwnProperty(tipo.id)) {
+        const val = alumno.notas[tipo.id];
+        return typeof val === 'number' && !isNaN(val) ? val : 0;
+      }
+      return 0;
+    };
+
+    forkJoin([asistencias$, participaciones$]).pipe(
+      switchMap(([asistencias, participaciones]: [any[], any[]]) => {
+        // Filtrar solo hasta la fecha actual
+        const hoy = new Date().toISOString().slice(0, 10);
+        const asistenciasHastaHoy = asistencias.filter((a: any) => a.fecha <= hoy);
+        const participacionesHastaHoy = participaciones.filter((p: any) => p.fecha <= hoy);
+        const asistenciasAlumno = asistenciasHastaHoy.filter((a: any) => a.alumno === alumnoId);
+        const participacionesAlumno = participacionesHastaHoy.filter((p: any) => p.alumno === alumnoId);
+        const fechasClases = Array.from(new Set(asistenciasHastaHoy.map((a: any) => a.fecha)));
+        const totalClases = fechasClases.length;
+        const presentes = asistenciasAlumno.filter((a: any) => a.estado === 'presente').length;
+        const porcentaje_asistencia = totalClases > 0 ? presentes / totalClases : 0;
+        const cantidad_participaciones = participacionesAlumno.length;
+        const promedio_participacion = cantidad_participaciones > 0 ?
+          participacionesAlumno.reduce((sum: number, p: any) => sum + (p.puntaje || 0), 0) / cantidad_participaciones : 0;
+        const porcentaje_participacion = totalClases > 0 ? cantidad_participaciones / totalClases : 0;
+        // --- MAPEO COMPLETO DE FEATURES PARA EL BACKEND ---
+        const features: any = {
+          'Examen 1_1': getNotaByNombre('Examen 1'),
+          'Examen 2_1': getNotaByNombre('Examen 2'),
+          'Examen Final_1': getNotaByNombre('Examen Final'),
+          'Exposición_1': getNotaByNombre('Exposición'),
+          'Tarea 1_1': getNotaByNombre('Tarea 1'),
+          'Tarea 2_1': getNotaByNombre('Tarea 2'),
+          'Tarea 3_1': getNotaByNombre('Tarea 3'),
+          'Tarea 4_1': getNotaByNombre('Tarea 4'),
+          'Tarea 5_1': getNotaByNombre('Tarea 5'),
+          'Tarea 6_1': getNotaByNombre('Tarea 6'),
+          'Tarea 7_1': getNotaByNombre('Tarea 7'),
+          'cantidad_participaciones': cantidad_participaciones,
+          'porcentaje_participacion': porcentaje_participacion,
+          'promedio_participacion': promedio_participacion,
+          'porcentaje_asistencia': porcentaje_asistencia
+        };
+        // LOG para depuración
+        console.log('[ML MATERIA PREDICT FEATURES]:', features);
+        return this.auth.predecirAprobadoMateria(features);
+      })
+    ).subscribe({
       next: (resp: PrediccionAprobadoMateriaResponse) => {
-        // LOG para depuración: ver respuesta del backend
         console.log('[ML MATERIA PREDICT RESPONSE]:', resp);
         this.displayMLMateriaPredResult[alumnoId] = resp;
         this.displayMLMateriaPredLoading[alumnoId] = false;
       },
       error: (err: any) => {
-        // LOG para depuración: ver error del backend
         console.error('[ML MATERIA PREDICT ERROR]:', err);
         this.displayMLMateriaPredResult[alumnoId] = { aprobado: false, probability: 0, features: {} };
         this.displayMLMateriaPredLoading[alumnoId] = false;
+      }
+    });
+  }
+
+  // --- Diálogo de predicción y notificación personalizada ---
+  abrirDialogoPrediccion(alumno: any, prediccion: any, materia: any, tipoNota: string) {
+    const dialogRef = this.dialog.open(PrediccionDialogComponent, {
+      data: { alumno, prediccion, materia, tipoNota },
+      width: '400px',
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.enviarNotificacion) {
+        this.showInfoMessage('¡Notificación enviada correctamente!');
       }
     });
   }

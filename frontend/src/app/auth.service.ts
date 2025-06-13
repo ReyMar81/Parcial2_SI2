@@ -230,11 +230,11 @@ export interface MateriaAsignadaConAlumnos {
 
 // --- Notas (Bulk Upsert) ---
 export interface NotaBulkRequest {
-  alumno: number; // id del alumno
-  tipo_nota: number; // id del tipo de nota
-  materia_asignada: number; // id de la materia_asignada
+  alumno: number; 
+  tipo_nota: number;
+  materia_asignada: number; 
   calificacion: number;
-  fecha?: string; // opcional, el backend la pone si no se envía
+  fecha?: string;
 }
 
 export interface NotaBulkResponse {
@@ -803,17 +803,45 @@ export class AuthService {
   }
 
   /**
+   * Obtiene todas las asistencias de los alumnos para una materia_asignada (sin filtrar por fecha)
+   * @param materiaAsignadaId id de la materia_asignada
+   */
+  getAsistenciasPorMateria(materiaAsignadaId: number) {
+    return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/asistencias/por-materia/`, {
+      params: { materia_asignada: materiaAsignadaId }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene todas las participaciones de los alumnos para una materia_asignada (sin filtrar por fecha)
+   * @param materiaAsignadaId id de la materia_asignada
+   */
+  getParticipacionesPorMateria(materiaAsignadaId: number) {
+    return this.http.get<any[]>(`${this.API_BASE}/api/evaluacion/participaciones/por-materia/`, {
+      params: { materia_asignada: materiaAsignadaId }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Predice si un alumno aprobará una materia usando ML (envía features desde el frontend)
    * @param features Objeto con todos los features requeridos por el modelo ML
    * @returns Observable<PrediccionAprobadoMateriaResponse> con probabilidad, aprobado y features usados
    */
-  predecirAprobadoAuto(features: { [feature: string]: number }): Observable<PrediccionAprobadoMateriaResponse> {
-    return this.http.post<PrediccionAprobadoMateriaResponse>(`${this.API_BASE}/api/evaluacion/predecir-aprobado-auto/`, features).pipe(
+  predecirAprobadoMateria(features: { [feature: string]: number }): Observable<PrediccionAprobadoMateriaResponse> {
+    return this.http.post<PrediccionAprobadoMateriaResponse>(`${this.API_BASE}/api/ml/predict-materia/`, features).pipe(
       map(resp => {
         // Si la respuesta tiene 'probabilidad', renómbrala a 'probability' para mantener consistencia
         if ('probabilidad' in resp && !('probability' in resp)) {
           (resp as any).probability = (resp as any).probabilidad;
           delete (resp as any).probabilidad;
+        }
+        // Convertir aprobado a booleano si es 0/1
+        if (typeof resp.aprobado === 'number') {
+          (resp as any).aprobado = !!resp.aprobado;
         }
         return resp;
       }),
@@ -827,6 +855,44 @@ export class AuthService {
    */
   predecirAprobadoExamen(params: { ciclo: string, materia_asignada: number, alumno: number, tipo_examen: string }): Observable<any> {
     return this.http.post<any>(`${this.API_BASE}/api/ml/predict-exam/`, params).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Envía una notificación personalizada a un alumno y sus tutores (usado para alertas de predicción)
+   */
+  enviarNotificacionAlumnoTutores(params: {
+    alumnoId: number;
+    mensaje?: string;
+    titulo?: string;
+    porcentaje?: number;
+    data?: any;
+  }): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_BASE}/api/personas/enviar-notificacion-alumno-tutores/`,
+      {
+        alumno_id: params.alumnoId,
+        mensaje: params.mensaje,
+        titulo: params.titulo,
+        porcentaje: params.porcentaje,
+        data: params.data,
+      }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene el resumen de predicciones ML por materia para el dashboard del maestro
+   * @returns Observable con array de objetos: materia_id, materia_nombre, total_alumnos, aprobados, en_riesgo, porcentaje_aprobados, porcentaje_en_riesgo
+   */
+  getDashboardMateriasPredicciones(ciclo?: string): Observable<any[]> {
+    let params = {};
+    if (ciclo) {
+      params = { ciclo };
+    }
+    return this.http.get<any[]>(`${this.API_BASE}/api/ml/dashboard-materias-predicciones/`, { params }).pipe(
       catchError(this.handleError)
     );
   }

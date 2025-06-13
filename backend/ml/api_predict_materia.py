@@ -3,35 +3,36 @@ import numpy as np
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+import logging
 
 class PredecirAprobadoMateriaAPIView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
-        """
-        Recibe: features (dict con todos los features requeridos por el modelo ML)
-        Devuelve: {'aprobado': 1/0, 'probabilidad': float, 'features': dict}
-        """
         data = request.data
-        # Lista de features requeridos por el modelo (ajusta según tu entrenamiento)
+        # LOG: mostrar features recibidos
+        print('[ML API] Features recibidos:', data)
         REQUIRED_FEATURES = [
-            'Tarea 1', 'Tarea 2', 'Examen 1', 'cantidad_participaciones',
-            'promedio_participacion', 'porcentaje_asistencia', 'promedio_nota'
-            # ...agrega aquí todos los features esperados por el modelo
+            'Examen 1_1', 'Examen 2_1', 'Examen Final_1', 'Exposición_1',
+            'Tarea 1_1', 'Tarea 2_1', 'Tarea 3_1', 'Tarea 4_1', 'Tarea 5_1', 'Tarea 6_1', 'Tarea 7_1',
+            'cantidad_participaciones', 'porcentaje_participacion', 'promedio_participacion', 'porcentaje_asistencia'
         ]
-        # Validar que todos los features requeridos estén presentes y sean numéricos
         missing = [f for f in REQUIRED_FEATURES if f not in data]
         if missing:
+            print('[ML API] Faltan features:', missing)
             return Response({'error': f'Faltan features requeridos: {missing}'}, status=400)
         try:
             features = [float(data[f]) for f in REQUIRED_FEATURES]
         except Exception as e:
+            print('[ML API] Error de formato en features:', str(e))
             return Response({'error': f'Error de formato en features: {str(e)}'}, status=400)
-        model = joblib.load('ml/modelo_random_forest_clf.pkl')
-        X = np.array([features])
         try:
+            model = joblib.load('ml/modelo_random_forest_clf.pkl')
+            X = np.array([features])
+            print('[ML API] X para predicción:', X)
             pred = model.predict(X)[0]
             prob = float(model.predict_proba(X)[0][1])
         except Exception as e:
+            print('[ML API] Error en predicción ML:', str(e))
             return Response({'error': 'Error en predicción ML', 'detalle': str(e)}, status=500)
         return Response({
             'aprobado': int(pred),
