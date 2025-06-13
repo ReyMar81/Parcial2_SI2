@@ -12,7 +12,7 @@ from apps.evaluacion.models import Nota, Asistencia, Participacion
 from apps.materias.models import MateriaAsignada, TipoNota
 
 # Configuración
-CICLOS = ['2022', '2023', '2024']
+CICLOS = ['2022', '2023', '2024', '2025']
 
 # Extraer datos para ML (materia): incluye todas las notas por tipo, cantidad y promedio de participaciones, asistencia
 

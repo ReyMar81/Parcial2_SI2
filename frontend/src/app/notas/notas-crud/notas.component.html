@@ -122,11 +122,13 @@
               <mat-icon>psychology</mat-icon>
             </button>
             <mat-progress-spinner *ngIf="displayMLMateriaPredLoading[alumno.id]" diameter="18" mode="indeterminate"></mat-progress-spinner>
-            <span *ngIf="displayMLMateriaPredResult[alumno.id]?.probability !== undefined"
-                  class="ml-1 text-xs font-semibold"
-                  [ngClass]="{'text-green-700': displayMLMateriaPredResult[alumno.id]?.aprobado, 'text-red-700': displayMLMateriaPredResult[alumno.id] && !displayMLMateriaPredResult[alumno.id]?.aprobado}">
-              {{ displayMLMateriaPredResult[alumno.id]?.aprobado ? '✔' : '✖' }} ({{ (displayMLMateriaPredResult[alumno.id]?.probability ?? 0)*100 | number:'1.0-0' }}%)
-            </span>
+            <ng-container *ngIf="displayMLMateriaPredResult[alumno.id] as result">
+              <span *ngIf="result && result.probability !== undefined"
+                    class="ml-1 text-xs font-semibold"
+                    [ngClass]="{'text-green-700': result.aprobado, 'text-red-700': !result.aprobado}">
+                {{ result.aprobado ? '✔' : '✖' }} ({{ (result.probability * 100).toFixed(1) }}%)
+              </span>
+            </ng-container>
           </div>
         </td>
       </ng-container>
@@ -278,9 +280,6 @@
   </div>
   <!-- ML DEMO: Botón y resultado de predicción de examen -->
   <div class="flex items-center gap-4 mt-4">
-    <button mat-raised-button color="accent" (click)="demoPredecirAprobadoExamen()" [disabled]="mlDemoLoading">
-      Probar predicción ML de examen
-    </button>
     <mat-progress-spinner *ngIf="mlDemoLoading" diameter="24" mode="indeterminate"></mat-progress-spinner>
     <span *ngIf="mlDemoResult" class="ml-2 font-semibold text-blue-700">{{ mlDemoResult }}</span>
   </div>

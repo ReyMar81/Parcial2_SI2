@@ -478,7 +478,7 @@ export class NotasComponent {
   }
 
   // --- Paginación de materias (barra superior) ---
-  materiasPageSize = 5;
+  materiasPageSize = 4;
   materiasCurrentPage = 0;
   get totalMateriasPages(): number {
     return Math.ceil(this.materias.length / this.materiasPageSize) || 1;
@@ -591,14 +591,14 @@ export class NotasComponent {
     this.displayMLMateriaPredLoading[alumnoId] = true;
     this.displayMLMateriaPredResult[alumnoId] = null;
 
-    // Helper para obtener la nota o 0 si no existe
-    const getNotaByNombre = (nombre: string): number => {
+    // Helper para obtener la nota o null si no existe
+    const getNotaByNombre = (nombre: string): number | null => {
       const tipo = this.tiposNota.find((t: any) => t.nombre === nombre);
       if (tipo && alumno.notas && alumno.notas.hasOwnProperty(tipo.id)) {
         const val = alumno.notas[tipo.id];
-        return typeof val === 'number' && !isNaN(val) ? val : 0;
+        return typeof val === 'number' && !isNaN(val) ? val : null;
       }
-      return 0;
+      return null;
     };
 
     forkJoin([asistencias$, participaciones$]).pipe(
