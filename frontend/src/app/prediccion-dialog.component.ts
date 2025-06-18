@@ -48,14 +48,29 @@ export class PrediccionDialogComponent {
   enviarNotificacion() {
     this.enviando = true;
     this.error = null;
-    // Construir mensaje personalizado con nombre, materia y probabilidad
     const nombre = `${this.data.alumno?.persona?.nombre || ''} ${this.data.alumno?.persona?.apellido_paterno || ''} ${this.data.alumno?.persona?.apellido_materno || ''}`.trim();
     const materia = this.data.materia?.nombre || '';
     const prob = this.probabilidad;
-    let mensajeFinal = `${nombre}\n${materia}: ${prob}%`;
+    let mensajeFinal = '';
+
+    // Solo agrega partes si tienen contenido
+    if (nombre) mensajeFinal += nombre;
+    if (materia) mensajeFinal += (mensajeFinal ? '\n' : '') + materia;
+    if (prob) mensajeFinal += (mensajeFinal ? ': ' : '') + `${prob}%`;
     if (this.mensaje && this.mensaje.trim().length > 0) {
-      mensajeFinal += `\n${this.mensaje.trim()}`;
+      mensajeFinal += (mensajeFinal ? '\n' : '') + this.mensaje.trim();
     }
+
+    // Validación: mensaje no vacío y no solo saltos de línea
+    if (!mensajeFinal.trim()) {
+      this.error = 'El mensaje no puede estar vacío.';
+      this.enviando = false;
+      return;
+    }
+
+    // Log para depuración
+    console.log('Mensaje que se enviará:', mensajeFinal);
+
     this.authService.enviarNotificacionAlumnoTutores({
       alumnoId: this.data.alumno.id,
       mensaje: mensajeFinal,
@@ -71,7 +86,7 @@ export class PrediccionDialogComponent {
         this.enviando = false;
         this.dialogRef.close({ enviarNotificacion: true });
       },
-      error: (err) => {
+      error: (err: any) => {
         this.enviando = false;
         this.error = 'Error al enviar notificación';
       }
